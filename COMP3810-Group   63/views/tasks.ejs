@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tasks</title>
+    <style>
+        body { font-family: Arial; margin: 20px; }
+        .task { border: 1px solid #ddd; padding: 15px; margin: 10px 0; }
+        .header { display: flex; justify-content: space-between; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Tasks</h1>
+        <div>
+            Welcome, <%= user.username %>!
+            <form action="/logout" method="POST" style="display: inline;">
+                <button type="submit">Logout</button>
+            </form>
+        </div>
+    </div>
+    
+    <% tasks.forEach(task => { %>
+        <div class="task">
+            <h3><%= task.title %></h3>
+            <p><%= task.description %></p>
+            <p>Priority: <%= task.priority %> | Status: <%= task.status %></p>
+        </div>
+    <% }); %>
+    
+    <p><a href="/">← Back to Home</a></p>
+</body>
+</html>
