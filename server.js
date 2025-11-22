@@ -184,8 +184,34 @@ function requireAdmin(req, res, next) {
 }
 
 // Dashboard page
-app.get('/dashboard', requireAuth, (req, res) => {
-  res.render('dashboard', { user: req.session ? req.session.user : null });
+app.get('/dashboard', requireAuth, async (req, res) => {
+  try {
+    let total = 0, pending = 0, inProgress = 0, completed = 0;
+
+    if (dbConnected) {
+      total = await Task.countDocuments();
+      pending = await Task.countDocuments({ status: 'pending' });
+      inProgress = await Task.countDocuments({ status: 'in-progress' });
+      completed = await Task.countDocuments({ status: 'completed' });
+    } else {
+      const tasks = inMemoryTasks || [];
+      total = tasks.length;
+      pending = tasks.filter(t => t.status === 'pending').length;
+      inProgress = tasks.filter(t => t.status === 'in-progress').length;
+      completed = tasks.filter(t => t.status === 'completed').length;
+    }
+
+    res.render('dashboard', {
+      user: req.session ? req.session.user : null,
+      totalTasks: total,
+      pendingCount: pending,
+      inProgressCount: inProgress,
+      completedCount: completed
+    });
+  } catch (err) {
+    console.error('Error rendering dashboard:', err);
+    res.render('dashboard', { user: req.session ? req.session.user : null });
+  }
 });
 
 // Admin tools page (web UI)
