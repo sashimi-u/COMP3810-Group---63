@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cookieSession = require('cookie-session');
 const path = require('path');
+const bcrypt = require('bcryptjs');
 
 const app = express();
 const PORT = 3000;
@@ -120,14 +121,39 @@ app.get('/login', (req, res) => {
   res.render('login', { error: null });
 });
 
-app.post('/login', (req, res) => {
+app.post('/login', async (req, res) => {
   const { username, password } = req.body;
+
+  // If DB is connected, authenticate against the users collection
+  if (dbConnected) {
+    try {
+      const user = await User.findOne({ username });
+      if (!user) return res.render('login', { error: 'Invalid credentials' });
+
+      const match = await bcrypt.compare(password, user.passwordHash);
+      if (!match) return res.render('login', { error: 'Invalid credentials' });
+
+      req.session = req.session || {};
+      req.session.user = { username: user.username, role: user.role };
+      const redirectTo = (req.session && req.session.returnTo) ? req.session.returnTo : '/dashboard';
+      req.session.returnTo = null;
+      return res.redirect(redirectTo);
+    } catch (err) {
+      console.error('Login error:', err);
+      return res.render('login', { error: 'Login failed' });
+    }
+  }
+
+  // Fallback (no DB): keep the original admin hardcoded check
   if (username === 'admin' && password === 'password') {
     req.session = req.session || {};
     req.session.user = { username: 'admin', role: 'admin' };
-    return res.redirect('/tasks');
+    const redirectTo = (req.session && req.session.returnTo) ? req.session.returnTo : '/dashboard';
+    req.session.returnTo = null;
+    return res.redirect(redirectTo);
   }
-  res.render('login', { error: 'Invalid credentials' });
+
+  return res.render('login', { error: 'Invalid credentials' });
 });
 
 app.get('/tasks', async (req, res) => {
@@ -149,7 +175,12 @@ app.get('/tasks', async (req, res) => {
 
 // simple auth middleware
 function requireAuth(req, res, next) {
-  if (!req.session || !req.session.user) return res.redirect('/login');
+  if (!req.session || !req.session.user) {
+    // remember the originally requested URL so we can return after login
+    req.session = req.session || {};
+    req.session.returnTo = req.originalUrl;
+    return res.redirect('/login');
+  }
   next();
 }
 

@@ -12,11 +12,8 @@
     <div class="header">
         <h1>Tasks</h1>
         <div>
-                Welcome, <%= user.username %>!
-                        <a href="/tasks/create" style="margin-right:12px;">Create Task</a>
-                        <% if (user && user.role === 'admin') { %>
-                            <a href="/admin/tools" style="margin-left:12px;">Tools</a>
-                        <% } %>
+            Welcome, <%= user.username %>!
+            <a href="/tasks/create" style="margin-right:12px;">Create Task</a>
             <form action="/logout" method="POST" style="display: inline;">
                 <button type="submit">Logout</button>
             </form>
