@@ -3,16 +3,33 @@ const mongoose = require('mongoose');
 const cookieSession = require('cookie-session');
 const path = require('path');
 const bcrypt = require('bcryptjs');
+const fs = require('fs');
 
 const app = express();
-const PORT = 3000;
+
+// Load optional JSON config from `scripts/config.json`. Environment variables
+// take precedence. This allows quick local customization without changing code.
+let config = {};
+try {
+  const cfgPath = path.join(__dirname, 'scripts', 'config.json');
+  if (fs.existsSync(cfgPath)) {
+    const raw = fs.readFileSync(cfgPath, 'utf8');
+    config = JSON.parse(raw || '{}');
+  }
+} catch (err) {
+  console.warn('Warning: failed to read scripts/config.json — using defaults or env vars');
+}
+
+const PORT = process.env.PORT || config.port || 3000;
+const MONGO_URL = process.env.MONGO_URL || config.mongoUrl || 'mongodb://localhost:27017/taskmanager';
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || config.adminUsername || 'admin';
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 app.use(cookieSession({
   name: 'session',
-  keys: ['your-secret-key'],
+  keys: process.env.SESSION_KEYS ? process.env.SESSION_KEYS.split(',') : (config.sessionKeys || ['your-secret-key']),
   // 24 hours
   maxAge: 24 * 60 * 60 * 1000
 }));
@@ -95,15 +112,14 @@ function getNextInMemoryId() {
   return String(max + 1);
 }
 
-mongoose.connect('mongodb://localhost:27017/taskmanager', {
+mongoose.connect(MONGO_URL, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 }).then(() => {
   dbConnected = true;
   console.log('✅ MongoDB connected');
   // Ensure the configured admin user is actually admin when DB is ready
-  const adminUser = process.env.ADMIN_USERNAME || 'admin';
-  ensureAdminAtStartup(adminUser);
+  ensureAdminAtStartup(ADMIN_USERNAME);
 }).catch(err => {
   dbConnected = false;
   console.log('❌ MongoDB connection failed, using in-memory data');
