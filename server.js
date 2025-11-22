@@ -1,4 +1,3 @@
-// ...existing code...
 const express = require('express');
 const mongoose = require('mongoose');
 const cookieSession = require('cookie-session');
@@ -17,6 +16,39 @@ app.use(cookieSession({
   maxAge: 24 * 60 * 60 * 1000
 }));
 
+// Unique identifier for this server process start. When the server restarts
+// this value changes — we'll use it to detect a restart on the client side
+// (stored in the client's cookie session) and clear the client's cookie
+// so stale sessions are removed after a server restart.
+const serverStartId = Date.now().toString();
+
+// Middleware: if the client's session was created under a different server
+// start (i.e. server was restarted), clear the cookie-session so clients
+// are forced to re-authenticate. For unauthenticated clients we just set
+// a marker so they won't be repeatedly cleared on every request.
+app.use((req, res, next) => {
+  try {
+    const clientServerId = req.session && req.session._serverStart;
+
+    if (clientServerId !== serverStartId) {
+      // If the client had an authenticated session (e.g. `user`), clear it
+      if (req.session && req.session.user) {
+        req.session = null;
+        res.clearCookie('session');
+      } else {
+        // For unauthenticated clients, add the current server marker so
+        // we don't clear them repeatedly on subsequent requests.
+        req.session = req.session || {};
+        req.session._serverStart = serverStartId;
+      }
+    }
+  } catch (err) {
+    // If anything goes wrong with reading/clearing the session, continue
+    // without blocking the request.
+  }
+  next();
+});
+
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
@@ -28,6 +60,7 @@ const TaskSchema = new mongoose.Schema({
 });
 
 const Task = mongoose.model('Task', TaskSchema);
+const { ensureAdminAtStartup } = require('./models/ensureAdmin');
 
 // ...existing code...
 let dbConnected = false;
@@ -38,12 +71,24 @@ let inMemoryTasks = [
   { _id: '2', title: 'Sample Task 2', description: 'Using demo data', priority: 'medium', status: 'in-progress' }
 ];
 
+// Return next sequential `_id` for in-memory tasks (keeps IDs numeric strings)
+function getNextInMemoryId() {
+  const nums = inMemoryTasks
+    .map(t => parseInt(t._id, 10))
+    .filter(n => !Number.isNaN(n));
+  const max = nums.length ? Math.max(...nums) : 0;
+  return String(max + 1);
+}
+
 mongoose.connect('mongodb://localhost:27017/taskmanager', {
   useNewUrlParser: true,
   useUnifiedTopology: true
 }).then(() => {
   dbConnected = true;
   console.log('✅ MongoDB connected');
+  // Ensure the configured admin user is actually admin when DB is ready
+  const adminUser = process.env.ADMIN_USERNAME || 'admin';
+  ensureAdminAtStartup(adminUser);
 }).catch(err => {
   dbConnected = false;
   console.log('❌ MongoDB connection failed, using in-memory data');
@@ -64,6 +109,7 @@ app.get('/login', (req, res) => {
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
   if (username === 'admin' && password === 'password') {
+    req.session = req.session || {};
     req.session.user = { username: 'admin' };
     return res.redirect('/tasks');
   }
@@ -71,7 +117,7 @@ app.post('/login', (req, res) => {
 });
 
 app.get('/tasks', async (req, res) => {
-  if (!req.session.user) return res.redirect('/login');
+  if (!req.session || !req.session.user) return res.redirect('/login');
   
   let tasks;
   try {
@@ -84,39 +130,39 @@ app.get('/tasks', async (req, res) => {
     tasks = inMemoryTasks;
   }
   
-  res.render('tasks', { tasks: tasks, user: req.session.user });
+  res.render('tasks', { tasks: tasks, user: req.session ? req.session.user : null });
 });
 
 // simple auth middleware
 function requireAuth(req, res, next) {
-  if (!req.session.user) return res.redirect('/login');
+  if (!req.session || !req.session.user) return res.redirect('/login');
   next();
 }
 
 // Dashboard page
 app.get('/dashboard', requireAuth, (req, res) => {
-  res.render('dashboard', { user: req.session.user });
+  res.render('dashboard', { user: req.session ? req.session.user : null });
 });
 
 // Create task (web UI)
 app.get('/tasks/create', requireAuth, (req, res) => {
-  res.render('create_task', { user: req.session.user, error: null });
+  res.render('create_task', { user: req.session ? req.session.user : null, error: null });
 });
 
 app.post('/tasks/create', requireAuth, async (req, res) => {
   const { title, description, priority = 'medium', status = 'pending', dueDate } = req.body;
-  if (!title) return res.render('create_task', { user: req.session.user, error: 'Title is required' });
+  if (!title) return res.render('create_task', { user: req.session ? req.session.user : null, error: 'Title is required' });
   try {
     if (dbConnected) {
       const newTask = new Task({ title, description, priority, status, dueDate: dueDate || undefined });
       await newTask.save();
     } else {
-      const newTask = { _id: String(Date.now()), title, description, priority, status };
+      const newTask = { _id: getNextInMemoryId(), title, description, priority, status };
       inMemoryTasks.push(newTask);
     }
     res.redirect('/tasks');
   } catch (err) {
-    res.render('create_task', { user: req.session.user, error: 'Unable to create task' });
+    res.render('create_task', { user: req.session ? req.session.user : null, error: 'Unable to create task' });
   }
 });
 
@@ -132,7 +178,7 @@ app.get('/tasks/:id/edit', requireAuth, async (req, res) => {
       task = inMemoryTasks.find(t => t._id === id);
       if (!task) return res.redirect('/tasks');
     }
-    res.render('edit_task', { user: req.session.user, task });
+    res.render('edit_task', { user: req.session ? req.session.user : null, task });
   } catch (err) {
     res.redirect('/tasks');
   }
@@ -222,7 +268,7 @@ app.post('/api/tasks', async (req, res) => {
       const saved = await newTask.save();
       return res.status(201).json(saved);
     } else {
-      const newTask = { _id: String(Date.now()), title, description, priority, status };
+      const newTask = { _id: getNextInMemoryId(), title, description, priority, status };
       inMemoryTasks.push(newTask);
       return res.status(201).json(newTask);
     }

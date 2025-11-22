@@ -30,6 +30,7 @@ const TaskSchema = new mongoose.Schema({
 });
 
 const Task = mongoose.model('Task', TaskSchema);
+const { ensureAdminAtStartup } = require('./models/ensureAdmin');
 // User model is required earlier; ensure it's loaded
 
 // ...existing code...
@@ -60,6 +61,9 @@ mongoose.connect('mongodb://localhost:27017/taskmanager', {
 }).then(() => {
   dbConnected = true;
   console.log('✅ MongoDB connected');
+  // Ensure admin user exists / has admin role after DB connection
+  const adminUser = process.env.ADMIN_USERNAME || 'admin';
+  ensureAdminAtStartup(adminUser);
 }).catch(err => {
   dbConnected = false;
   console.log('❌ MongoDB connection failed, using in-memory data');

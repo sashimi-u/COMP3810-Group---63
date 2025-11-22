@@ -81,3 +81,31 @@ curl -X DELETE http://localhost:3000/api/tasks/<TASK_ID>
 ```
 
 這些指令適合用來做快速 demo 或手動測試 API。若要用 Web UI，請先登入（`/login`），然後在瀏覽器操作 `/tasks`、`/tasks/create` 等頁面。
+
+> 註：API 在回傳 `_id` 時，如果你啟用了 MongoDB，會是 Mongo 的 ObjectId（像 `64b7f2...`）；如果沒有連上 MongoDB，應用會使用記憶體示範資料，ID 為數字字串（`"1"`, `"2"`）。請以 API 回傳的 `_id` 為主，不要假設型別。
+
+進階（在 shell 中直接取得新建立任務的 `_id` 並後續使用）：
+
+- 使用 `jq`（推薦，需先安裝 `jq`）：
+
+```bash
+# 建立任務並把回傳的 `_id` 存到變數
+created_id=$(curl -s -X POST -H "Content-Type: application/json" \
+  -d '{"title":"買牛奶","description":"到超市買一瓶","priority":"low","status":"pending"}' \
+  http://localhost:3000/api/tasks | jq -r '._id')
+
+# 使用變數去取得或操作任務
+curl http://localhost:3000/api/tasks/$created_id
+curl -X PUT -H "Content-Type: application/json" -d '{"status":"completed"}' http://localhost:3000/api/tasks/$created_id
+curl -X DELETE http://localhost:3000/api/tasks/$created_id
+```
+
+- 不使用 `jq` 的簡單方法（回傳 JSON 原文，需要手動複製 `_id`）：
+
+```bash
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"title":"買牛奶","description":"到超市買一瓶","priority":"low","status":"pending"}' \
+  http://localhost:3000/api/tasks
+# 從輸出中複製 _id，然後替換下面的 <TASK_ID>
+curl http://localhost:3000/api/tasks/<TASK_ID>
+```
