@@ -8,27 +8,9 @@
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>Task Manager Dashboard</h1>
-                <div class="user-info">
-                Welcome, <%= user.username %>!
-                <% if (user && user.role === 'admin') { %>
-                  <a href="/admin/tools" style="margin-left:12px;">Tools</a>
-                <% } %>
-                <form action="/logout" method="POST" style="display: inline; margin-left:8px;">
-                    <button type="submit" class="btn-logout">Logout</button>
-                </form>
-            </div>
-        </header>
-        
-        <nav class="sidebar">
-            <ul>
-                <li><a href="/dashboard" class="active">Dashboard</a></li>
-                <li><a href="/tasks">Manage Tasks</a></li>
-                <li><a href="/tasks/create">Create Task</a></li>
-            </ul>
-        </nav>
-        
+        <%- include('partials/header', { user: user }) %>
+        <%- include('partials/sidebar', { active: 'dashboard' }) %>
+
         <main class="content">
             <div class="welcome-section">
                 <h2>Welcome to Your Task Manager</h2>
@@ -36,6 +18,13 @@
                 <div class="quick-actions">
                     <a href="/tasks/create" class="btn btn-primary">Create New Task</a>
                     <a href="/tasks" class="btn btn-secondary">View All Tasks</a>
+                </div>
+
+                <div class="dashboxes">
+                    <%- include('partials/dashbox', { icon: '📋', iconClass: 'tasks', label: 'Total Tasks', value: typeof totalTasks !== 'undefined' ? totalTasks : '—' }) %>
+                    <%- include('partials/dashbox', { icon: '⏳', iconClass: 'pending', label: 'Pending', value: typeof pendingCount !== 'undefined' ? pendingCount : '—' }) %>
+                    <%- include('partials/dashbox', { icon: '⚙️', iconClass: 'progress', label: 'In Progress', value: typeof inProgressCount !== 'undefined' ? inProgressCount : '—' }) %>
+                    <%- include('partials/dashbox', { icon: '✅', iconClass: 'done', label: 'Completed', value: typeof completedCount !== 'undefined' ? completedCount : '—' }) %>
                 </div>
             </div>
         </main>
