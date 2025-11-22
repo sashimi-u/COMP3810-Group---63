@@ -88,6 +88,7 @@ app.post('/login', async (req, res) => {
 
     // authenticated
     req.session.user = { username: user.username, role: user.role };
+    console.log('User logged in:', req.session.user);
     // mark user as online
     onlineUsers.set(user.username, Date.now());
     return res.redirect('/tasks');
@@ -135,6 +136,11 @@ app.get('/dashboard', requireAuth, (req, res) => {
 // Admin tools page (web UI)
 app.get('/admin/tools', requireAdmin, (req, res) => {
   res.render('admin_tools', { user: req.session.user });
+});
+
+// Debug route: show current session info
+app.get('/whoami', (req, res) => {
+  return res.json({ session: req.session || null });
 });
 
 // Create task (web UI)
