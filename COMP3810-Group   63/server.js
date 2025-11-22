@@ -86,6 +86,97 @@ app.get('/tasks', async (req, res) => {
   res.render('tasks', { tasks: tasks, user: req.session.user });
 });
 
+// simple auth middleware
+function requireAuth(req, res, next) {
+  if (!req.session.user) return res.redirect('/login');
+  next();
+}
+
+// Dashboard page
+app.get('/dashboard', requireAuth, (req, res) => {
+  res.render('dashboard', { user: req.session.user });
+});
+
+// Create task (web UI)
+app.get('/tasks/create', requireAuth, (req, res) => {
+  res.render('create_task', { user: req.session.user, error: null });
+});
+
+app.post('/tasks/create', requireAuth, async (req, res) => {
+  const { title, description, priority = 'medium', status = 'pending', dueDate } = req.body;
+  if (!title) return res.render('create_task', { user: req.session.user, error: 'Title is required' });
+  try {
+    if (dbConnected) {
+      const newTask = new Task({ title, description, priority, status, dueDate: dueDate || undefined });
+      await newTask.save();
+    } else {
+      const newTask = { _id: String(Date.now()), title, description, priority, status };
+      inMemoryTasks.push(newTask);
+    }
+    res.redirect('/tasks');
+  } catch (err) {
+    res.render('create_task', { user: req.session.user, error: 'Unable to create task' });
+  }
+});
+
+// Edit task (web UI)
+app.get('/tasks/:id/edit', requireAuth, async (req, res) => {
+  const id = req.params.id;
+  try {
+    let task;
+    if (dbConnected) {
+      task = await Task.findById(id);
+      if (!task) return res.redirect('/tasks');
+    } else {
+      task = inMemoryTasks.find(t => t._id === id);
+      if (!task) return res.redirect('/tasks');
+    }
+    res.render('edit_task', { user: req.session.user, task });
+  } catch (err) {
+    res.redirect('/tasks');
+  }
+});
+
+app.post('/tasks/:id/update', requireAuth, async (req, res) => {
+  const id = req.params.id;
+  const update = req.body;
+  try {
+    if (dbConnected) {
+      await Task.findByIdAndUpdate(id, update);
+    } else {
+      const idx = inMemoryTasks.findIndex(t => t._id === id);
+      if (idx !== -1) inMemoryTasks[idx] = { ...inMemoryTasks[idx], ...update };
+    }
+    res.redirect('/tasks');
+  } catch (err) {
+    res.redirect('/tasks');
+  }
+});
+
+// Delete (web UI)
+app.post('/tasks/:id/delete', requireAuth, async (req, res) => {
+  const id = req.params.id;
+  try {
+    if (dbConnected) {
+      await Task.findByIdAndDelete(id);
+    } else {
+      const idx = inMemoryTasks.findIndex(t => t._id === id);
+      if (idx !== -1) inMemoryTasks.splice(idx, 1);
+    }
+    res.redirect('/tasks');
+  } catch (err) {
+    res.redirect('/tasks');
+  }
+});
+
+// Logout
+app.post('/logout', (req, res) => {
+  req.session.destroy(err => {
+    res.clearCookie('connect.sid');
+    return res.redirect('/');
+  });
+});
+
 // JSON API routes
 // GET all tasks
 app.get('/api/tasks', async (req, res) => {
@@ -182,4 +273,3 @@ app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Open http://localhost:${PORT} in your browser`);
 });
-// ...existing code...
