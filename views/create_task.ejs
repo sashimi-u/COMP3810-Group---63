@@ -31,26 +31,36 @@
                 </div>
                 <div class="form-group">
                     <label>Priority</label>
-                    <select name="priority">
-                        <option value="low">Low</option>
-                        <option value="medium" selected>Medium</option>
-                        <option value="high">High</option>
-                    </select>
+                    <div class="segmented" role="radiogroup" aria-label="Priority">
+                        <input type="radio" id="priority-low" name="priority" value="low" class="pri-low">
+                        <label for="priority-low" class="btn btn-ghost">Low</label>
+
+                        <input type="radio" id="priority-medium" name="priority" value="medium" checked class="pri-medium">
+                        <label for="priority-medium" class="btn btn-ghost">Medium</label>
+
+                        <input type="radio" id="priority-high" name="priority" value="high" class="pri-high">
+                        <label for="priority-high" class="btn btn-ghost">High</label>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Status</label>
-                    <select name="status">
-                        <option value="pending" selected>Pending</option>
-                        <option value="in-progress">In Progress</option>
-                        <option value="completed">Completed</option>
-                    </select>
+                    <div class="segmented" role="radiogroup" aria-label="Status">
+                        <input type="radio" id="status-pending" name="status" value="pending" checked class="st-pending">
+                        <label for="status-pending" class="btn btn-ghost">Pending</label>
+
+                        <input type="radio" id="status-inprogress" name="status" value="in-progress" class="st-progress">
+                        <label for="status-inprogress" class="btn btn-ghost">In Progress</label>
+
+                        <input type="radio" id="status-completed" name="status" value="completed" class="st-completed">
+                        <label for="status-completed" class="btn btn-ghost">Completed</label>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Due Date (optional)</label>
                     <input type="date" name="dueDate">
                 </div>
                 <button type="submit" class="btn btn-primary">Create</button>
-                <a href="/tasks" class="btn btn-ghost" style="margin-left:12px;">Cancel</a>
+                <a href="/tasks" class="btn btn-ghost">Cancel</a>
             </form>
         </main>
     </div>

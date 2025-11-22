@@ -1,12 +1,12 @@
-<header>
-    <h1>Task Manager Dashboard</h1>
-    <div class="user-info">
-        Welcome, <%= user.username %>!
+<header class="header-main" role="banner">
+    <div class="site-title">Task Manager</div>
+    <div class="user-info" role="navigation" aria-label="User controls">
+        <span>Welcome, <strong><%= user.username %></strong></span>
         <% if (user && user.role === 'admin') { %>
-          <a href="/admin/tools" style="margin-left:12px;">Tools</a>
+          <a href="/admin/tools" class="btn btn-ghost">Tools</a>
         <% } %>
         <form action="/logout" method="POST" style="display: inline; margin-left:8px;">
-            <button type="submit" class="btn-logout">Logout</button>
+            <button type="submit" class="btn btn-ghost" aria-label="Logout">Logout</button>
         </form>
     </div>
 </header>

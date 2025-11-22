@@ -111,10 +111,8 @@ mongoose.connect('mongodb://localhost:27017/taskmanager', {
 
 // web UI routes (unchanged)
 app.get('/', (req, res) => {
-  res.send(`
-    <h1>Task Manager Server is Working! ✅</h1>
-    <p><a href="/login">Go to Login Page</a></p>
-  `);
+  // Redirect root to the login page (per UX request)
+  return res.redirect('/login');
 });
 
 app.get('/login', (req, res) => {
@@ -410,6 +408,24 @@ app.get('/admin/users', requireAdmin, async (req, res) => {
   } catch (err) {
     console.error('Admin users error:', err);
     return res.status(500).json({ error: 'Unable to fetch users' });
+  }
+});
+
+// Rendered admin users page
+app.get('/admin/users/list', requireAdmin, async (req, res) => {
+  try {
+    const users = await User.find({}, 'username role createdAt');
+    const list = users.map(u => ({
+      username: u.username,
+      role: u.role,
+      createdAt: u.createdAt,
+      online: onlineUsers.has(u.username),
+      lastActive: onlineUsers.has(u.username) ? new Date(onlineUsers.get(u.username)).toISOString() : null
+    }));
+    return res.render('admin_users', { user: req.session ? req.session.user : null, users: list });
+  } catch (err) {
+    console.error('Admin users page error:', err);
+    return res.redirect('/admin/tools');
   }
 });
 

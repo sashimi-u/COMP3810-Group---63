@@ -1,31 +1,29 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Login</title>
-    <style>
-        body { font-family: Arial; max-width: 400px; margin: 100px auto; padding: 20px; }
-        .form-group { margin: 15px 0; }
-        label { display: block; margin-bottom: 5px; }
-        input { width: 100%; padding: 8px; }
-        button { background: #007bff; color: white; padding: 10px 20px; border: none; cursor: pointer; }
-    </style>
+        <title>Login</title>
+        <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-    <h1>Login</h1>
-    <% if (error) { %>
-        <p style="color: red;"><%= error %></p>
-    <% } %>
-    <form method="POST">
-        <div class="form-group">
-            <label>Username:</label>
-            <input type="text" name="username" required>
-        </div>
-        <div class="form-group">
-            <label>Password:</label>
-            <input type="password" name="password" required>
-        </div>
-        <button type="submit">Login</button>
-    </form>
-    <p><strong>Demo:</strong> admin / password</p>
+    <div class="login-container">
+        <form class="login-form" method="POST" aria-label="Login form">
+            <h1>Sign in</h1>
+            <% if (error) { %>
+                <div class="error" role="alert"><%= error %></div>
+            <% } %>
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input id="username" name="username" type="text" required autocomplete="username">
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input id="password" name="password" type="password" required autocomplete="current-password">
+            </div>
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary">Login</button>
+            </div>
+            <p style="font-size:0.9rem;color:#666;">Demo: <strong>admin</strong> / <strong>password</strong></p>
+        </form>
+    </div>
 </body>
 </html>

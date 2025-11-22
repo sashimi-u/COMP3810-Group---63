@@ -21,60 +21,10 @@
       <p>Welcome, <%= user.username %> (role: <%= user.role %>)</p>
 
       <div class="controls">
-        <button id="btnLoadUsers" class="btn btn-primary">Show Website Users</button>
+        <a href="/admin/users/list" class="btn btn-primary">Show Website Users</a>
       </div>
 
-      <div id="result">
-        <!-- users table will be injected here -->
-      </div>
-
-      <p><a href="/dashboard">← Back to Dashboard</a></p>
-
-      <script>
-        document.getElementById('btnLoadUsers').addEventListener('click', async () => {
-          const resDiv = document.getElementById('result');
-          resDiv.innerHTML = '<p>Loading...</p>';
-          try {
-            const resp = await fetch('/admin/users', { credentials: 'same-origin' });
-            if (!resp.ok) {
-              const txt = await resp.text();
-              resDiv.innerHTML = '<p style="color:red;">Error: ' + resp.status + ' ' + txt + '</p>';
-              return;
-            }
-            const data = await resp.json();
-            if (!data.users) { resDiv.innerHTML = '<p>No users returned</p>'; return; }
-
-            let html = '<h2>Users (' + data.count + ')</h2>';
-            html += '<table><thead><tr><th>Username</th><th>Role</th><th>Created At</th><th>Online</th><th>Last Active</th><th>Actions</th></tr></thead><tbody>';
-            data.users.forEach((u, idx) => {
-              const created = u.createdAt ? new Date(u.createdAt).toLocaleString() : '';
-              const online = u.online ? 'Yes' : 'No';
-              const lastActive = u.lastActive ? new Date(u.lastActive).toLocaleString() : '';
-              html += '<tr data-idx="' + idx + '">' +
-                '<td>' + (u.username||'') + '</td>' +
-                '<td>' + (u.role||'') + '</td>' +
-                '<td>' + created + '</td>' +
-                '<td>' + online + '</td>' +
-                '<td>' + lastActive + '</td>' +
-                '<td class="user-actions"><button class="btn btn-secondary" data-idx="' + idx + '" onclick="toggleDetails(' + idx + ')">View</button></td>' +
-                '</tr>';
-              html += '<tr class="details-row" id="details-' + idx + '" style="display:none;"><td colspan="6"><div class="user-details">' +
-                'Username: ' + (u.username||'') + '<br/>Role: ' + (u.role||'') + '<br/>Created At: ' + created + '<br/>Online: ' + online + (u.lastActive ? ('<br/>Last Active: ' + lastActive) : '') +
-                '</div></td></tr>';
-            });
-            html += '</tbody></table>';
-            resDiv.innerHTML = html;
-            window.toggleDetails = function(i) {
-              const el = document.getElementById('details-' + i);
-              if (!el) return;
-              el.style.display = el.style.display === 'none' ? 'table-row' : 'none';
-            }
-          } catch (err) {
-            resDiv.innerHTML = '<p style="color:red;">Request failed</p>';
-            console.error(err);
-          }
-        });
-      </script>
+      <p><a href="/dashboard" class="btn btn-ghost">← Back to Dashboard</a></p>
     </main>
   </div>
 </body>
