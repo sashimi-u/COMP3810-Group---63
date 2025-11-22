@@ -124,36 +124,28 @@ app.get('/login', (req, res) => {
 app.post('/login', async (req, res) => {
   const { username, password } = req.body;
 
-  // If DB is connected, authenticate against the users collection
-  if (dbConnected) {
-    try {
-      const user = await User.findOne({ username });
-      if (!user) return res.render('login', { error: 'Invalid credentials' });
-
-      const match = await bcrypt.compare(password, user.passwordHash);
-      if (!match) return res.render('login', { error: 'Invalid credentials' });
-
-      req.session = req.session || {};
-      req.session.user = { username: user.username, role: user.role };
-      const redirectTo = (req.session && req.session.returnTo) ? req.session.returnTo : '/dashboard';
-      req.session.returnTo = null;
-      return res.redirect(redirectTo);
-    } catch (err) {
-      console.error('Login error:', err);
-      return res.render('login', { error: 'Login failed' });
-    }
+  // Authenticate against the users collection in the database only
+  if (!dbConnected) {
+    // If there's no DB connection, do not allow login (no hardcoded fallback)
+    return res.render('login', { error: 'Login unavailable: database not connected' });
   }
 
-  // Fallback (no DB): keep the original admin hardcoded check
-  if (username === 'admin' && password === 'password') {
+  try {
+    const user = await User.findOne({ username });
+    if (!user) return res.render('login', { error: 'Invalid credentials' });
+
+    const match = await bcrypt.compare(password, user.passwordHash);
+    if (!match) return res.render('login', { error: 'Invalid credentials' });
+
     req.session = req.session || {};
-    req.session.user = { username: 'admin', role: 'admin' };
+    req.session.user = { username: user.username, role: user.role };
     const redirectTo = (req.session && req.session.returnTo) ? req.session.returnTo : '/dashboard';
     req.session.returnTo = null;
     return res.redirect(redirectTo);
+  } catch (err) {
+    console.error('Login error:', err);
+    return res.render('login', { error: 'Login failed' });
   }
-
-  return res.render('login', { error: 'Invalid credentials' });
 });
 
 app.get('/tasks', async (req, res) => {
