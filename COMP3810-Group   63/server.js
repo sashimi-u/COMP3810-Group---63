@@ -1,7 +1,7 @@
 // ...existing code...
 const express = require('express');
 const mongoose = require('mongoose');
-const session = require('express-session');
+const cookieSession = require('cookie-session');
 const path = require('path');
 
 const app = express();
@@ -10,10 +10,11 @@ const PORT = 3000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
-app.use(session({
-  secret: 'your-secret-key',
-  resave: false,
-  saveUninitialized: false
+app.use(cookieSession({
+  name: 'session',
+  keys: ['your-secret-key'],
+  // 24 hours
+  maxAge: 24 * 60 * 60 * 1000
 }));
 
 app.set('view engine', 'ejs');
@@ -171,10 +172,10 @@ app.post('/tasks/:id/delete', requireAuth, async (req, res) => {
 
 // Logout
 app.post('/logout', (req, res) => {
-  req.session.destroy(err => {
-    res.clearCookie('connect.sid');
-    return res.redirect('/');
-  });
+  // clear cookie-session
+  req.session = null;
+  res.clearCookie('session');
+  return res.redirect('/');
 });
 
 // JSON API routes
