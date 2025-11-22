@@ -30,9 +30,23 @@ const TaskSchema = new mongoose.Schema({
 });
 
 const Task = mongoose.model('Task', TaskSchema);
+// User model is required earlier; ensure it's loaded
 
 // ...existing code...
 let dbConnected = false;
+
+// In-memory tracking of online users: username -> lastActive timestamp
+// Note: This is ephemeral and resets when server restarts.
+const onlineUsers = new Map();
+
+// Middleware to refresh lastActive for authenticated users on each request
+function refreshLastActive(req, res, next) {
+  if (req.session && req.session.user && req.session.user.username) {
+    onlineUsers.set(req.session.user.username, Date.now());
+  }
+  next();
+}
+app.use(refreshLastActive);
 
 // simple in-memory fallback data store
 let inMemoryTasks = [
@@ -74,6 +88,8 @@ app.post('/login', async (req, res) => {
 
     // authenticated
     req.session.user = { username: user.username, role: user.role };
+    // mark user as online
+    onlineUsers.set(user.username, Date.now());
     return res.redirect('/tasks');
   } catch (err) {
     console.error('Login error:', err);
@@ -104,9 +120,21 @@ function requireAuth(req, res, next) {
   next();
 }
 
+// admin-only middleware
+function requireAdmin(req, res, next) {
+  if (!req.session.user) return res.redirect('/login');
+  if (!req.session.user.role || req.session.user.role !== 'admin') return res.status(403).send('Forbidden');
+  next();
+}
+
 // Dashboard page
 app.get('/dashboard', requireAuth, (req, res) => {
   res.render('dashboard', { user: req.session.user });
+});
+
+// Admin tools page (web UI)
+app.get('/admin/tools', requireAdmin, (req, res) => {
+  res.render('admin_tools', { user: req.session.user });
 });
 
 // Create task (web UI)
@@ -183,7 +211,10 @@ app.post('/tasks/:id/delete', requireAuth, async (req, res) => {
 
 // Logout
 app.post('/logout', (req, res) => {
-  // clear cookie-session
+  // clear cookie-session and mark user offline
+  if (req.session && req.session.user && req.session.user.username) {
+    onlineUsers.delete(req.session.user.username);
+  }
   req.session = null;
   res.clearCookie('session');
   return res.redirect('/');
@@ -278,6 +309,24 @@ app.delete('/api/tasks/:id', async (req, res) => {
     }
   } catch (err) {
     return res.status(500).json({ error: 'Unable to delete task' });
+  }
+});
+
+// Admin API: list all users, show online status
+app.get('/admin/users', requireAdmin, async (req, res) => {
+  try {
+    const users = await User.find({}, 'username role createdAt');
+    const list = users.map(u => ({
+      username: u.username,
+      role: u.role,
+      createdAt: u.createdAt,
+      online: onlineUsers.has(u.username),
+      lastActive: onlineUsers.has(u.username) ? new Date(onlineUsers.get(u.username)).toISOString() : null
+    }));
+    return res.json({ count: list.length, users: list });
+  } catch (err) {
+    console.error('Admin users error:', err);
+    return res.status(500).json({ error: 'Unable to fetch users' });
   }
 });
 
