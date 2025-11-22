@@ -46,8 +46,8 @@
                     <label>Due Date (optional)</label>
                     <input type="date" name="dueDate" value="<%= task.dueDate ? task.dueDate.toISOString().substring(0,10) : '' %>">
                 </div>
-                <button type="submit">Save</button>
-                <a href="/tasks" style="margin-left:12px;">Cancel</a>
+                <button type="submit" class="btn btn-primary">Save</button>
+                <a href="/tasks" class="btn btn-ghost" style="margin-left:12px;">Cancel</a>
             </form>
         </main>
     </div>

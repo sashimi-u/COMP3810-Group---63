@@ -66,3 +66,32 @@ body {
     margin-bottom: 1rem;
     border: 1px solid #fcc;
 }
+
+/* Button styles */
+.btn {
+    display: inline-block;
+    padding: 0.5rem 0.85rem;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+}
+.btn-primary {
+    background: linear-gradient(90deg,#4f46e5,#6d28d9);
+    color: #fff;
+}
+.btn-secondary {
+    background: #eef2ff;
+    color: #1f2937;
+    border-color: #e0e7ff;
+}
+.btn-ghost {
+    background: transparent;
+    color: #374151;
+    border-color: #d1d5db;
+}
+
+/* Admin users table actions */
+.user-actions button { margin-right: 6px; }
+.user-details { font-size: 0.9rem; color: #444; padding: 8px 12px; background:#fbfbff; border-radius:6px; margin-top:6px; }

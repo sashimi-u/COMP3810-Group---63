@@ -21,7 +21,7 @@
       <p>Welcome, <%= user.username %> (role: <%= user.role %>)</p>
 
       <div class="controls">
-        <button id="btnLoadUsers">Show Website Users</button>
+        <button id="btnLoadUsers" class="btn btn-primary">Show Website Users</button>
       </div>
 
       <div id="result">
@@ -45,18 +45,30 @@
             if (!data.users) { resDiv.innerHTML = '<p>No users returned</p>'; return; }
 
             let html = '<h2>Users (' + data.count + ')</h2>';
-            html += '<table><thead><tr><th>Username</th><th>Role</th><th>Created At</th><th>Online</th><th>Last Active</th></tr></thead><tbody>';
-            data.users.forEach(u => {
-              html += '<tr>' +
-                      '<td>' + (u.username||'') + '</td>' +
-                      '<td>' + (u.role||'') + '</td>' +
-                      '<td>' + (u.createdAt ? new Date(u.createdAt).toLocaleString() : '') + '</td>' +
-                      '<td>' + (u.online ? 'Yes' : 'No') + '</td>' +
-                      '<td>' + (u.lastActive ? new Date(u.lastActive).toLocaleString() : '') + '</td>' +
-                      '</tr>';
+            html += '<table><thead><tr><th>Username</th><th>Role</th><th>Created At</th><th>Online</th><th>Last Active</th><th>Actions</th></tr></thead><tbody>';
+            data.users.forEach((u, idx) => {
+              const created = u.createdAt ? new Date(u.createdAt).toLocaleString() : '';
+              const online = u.online ? 'Yes' : 'No';
+              const lastActive = u.lastActive ? new Date(u.lastActive).toLocaleString() : '';
+              html += '<tr data-idx="' + idx + '">' +
+                '<td>' + (u.username||'') + '</td>' +
+                '<td>' + (u.role||'') + '</td>' +
+                '<td>' + created + '</td>' +
+                '<td>' + online + '</td>' +
+                '<td>' + lastActive + '</td>' +
+                '<td class="user-actions"><button class="btn btn-secondary" data-idx="' + idx + '" onclick="toggleDetails(' + idx + ')">View</button></td>' +
+                '</tr>';
+              html += '<tr class="details-row" id="details-' + idx + '" style="display:none;"><td colspan="6"><div class="user-details">' +
+                'Username: ' + (u.username||'') + '<br/>Role: ' + (u.role||'') + '<br/>Created At: ' + created + '<br/>Online: ' + online + (u.lastActive ? ('<br/>Last Active: ' + lastActive) : '') +
+                '</div></td></tr>';
             });
             html += '</tbody></table>';
             resDiv.innerHTML = html;
+            window.toggleDetails = function(i) {
+              const el = document.getElementById('details-' + i);
+              if (!el) return;
+              el.style.display = el.style.display === 'none' ? 'table-row' : 'none';
+            }
           } catch (err) {
             resDiv.innerHTML = '<p style="color:red;">Request failed</p>';
             console.error(err);
