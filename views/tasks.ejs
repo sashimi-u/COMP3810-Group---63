@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tasks</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .task { border: 1px solid #ddd; padding: 15px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <%- include('partials/header', { user: user }) %>
+        <%- include('partials/sidebar', { active: 'tasks' }) %>
+
+        <main class="content">
+            <h1>Tasks</h1>
+                <div style="margin-bottom:12px;">
+                <a href="/tasks/create" class="btn btn-primary">Create Task</a>
+            </div>
+
+            <% tasks.forEach(task => { %>
+                <% const pClass = (task.priority === 'high') ? 'pill-danger' : ((task.priority === 'medium') ? 'pill-secondary' : 'pill-success'); %>
+                <% const sClass = (task.status === 'completed') ? 'pill-success' : ((task.status === 'in-progress') ? 'pill-primary' : 'pill-secondary'); %>
+                <div class="task">
+                    <h3><%= task.title %></h3>
+                    <p><%= task.description %></p>
+                    <div class="task-meta">
+                        <div class="meta-item"><strong>Priority:</strong> <span class="pill <%= pClass %>"><%= task.priority %></span></div>
+                        <div class="meta-item"><strong>Status:</strong> <span class="pill <%= sClass %>"><%= task.status %></span></div>
+                    </div>
+                    <div class="task-actions">
+                        <a href="/tasks/<%= task._id %>/edit" class="btn btn-secondary">Edit</a>
+                        <form action="/tasks/<%= task._id %>/delete" method="POST" style="display:inline; margin-left:8px;">
+                            <button type="submit" class="btn btn-danger">Delete</button>
+                        </form>
+                    </div>
+                </div>
+            <% }); %>
+
+            <p><a href="/" class="btn btn-ghost">← Back to Home</a></p>
+        </main>
+    </div>
+</body>
+</html>

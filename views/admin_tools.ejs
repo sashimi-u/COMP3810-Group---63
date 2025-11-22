@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Admin Tools</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ddd; padding: 8px; }
+    th { background: #f3f3f3; }
+    .controls { margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <%- include('partials/header', { user: user }) %>
+    <%- include('partials/sidebar', { active: 'admin' }) %>
+
+    <main class="content">
+      <h1>Admin Tools</h1>
+      <p>Welcome, <%= user.username %> (role: <%= user.role %>)</p>
+
+      <div class="controls">
+        <a href="/admin/users/list" class="btn btn-primary">Show Website Users</a>
+      </div>
+
+      <p><a href="/dashboard" class="btn btn-ghost">← Back to Dashboard</a></p>
+    </main>
+  </div>
+</body>
+</html>

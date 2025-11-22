@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Task Manager</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <%- include('partials/header', { user: user }) %>
+        <%- include('partials/sidebar', { active: 'dashboard' }) %>
+
+        <main class="content">
+            <div class="welcome-section">
+                <h2>Welcome to Your Task Manager</h2>
+                <p>Use the navigation menu to manage your tasks efficiently.</p>
+                <div class="quick-actions">
+                    <a href="/tasks/create" class="btn btn-primary">Create New Task</a>
+                    <a href="/tasks" class="btn btn-secondary">View All Tasks</a>
+                </div>
+
+                <div class="dashboxes">
+                    <%- include('partials/dashbox', { icon: '📋', iconClass: 'tasks', label: 'Total Tasks', value: typeof totalTasks !== 'undefined' ? totalTasks : '—' }) %>
+                    <%- include('partials/dashbox', { icon: '⏳', iconClass: 'pending', label: 'Pending', value: typeof pendingCount !== 'undefined' ? pendingCount : '—' }) %>
+                    <%- include('partials/dashbox', { icon: '⚙️', iconClass: 'progress', label: 'In Progress', value: typeof inProgressCount !== 'undefined' ? inProgressCount : '—' }) %>
+                    <%- include('partials/dashbox', { icon: '✅', iconClass: 'done', label: 'Completed', value: typeof completedCount !== 'undefined' ? completedCount : '—' }) %>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

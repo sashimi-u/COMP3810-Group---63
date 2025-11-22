@@ -1,0 +1,9 @@
+<nav class="sidebar" role="navigation" aria-label="Main menu">
+    <ul>
+        <% if (active !== 'dashboard') { %>
+            <li><a href="/dashboard" class="btn btn-ghost <%= active === 'dashboard' ? 'active' : '' %>">Dashboard</a></li>
+        <% } %>
+        <li><a href="/tasks" class="btn btn-ghost <%= active === 'tasks' ? 'active' : '' %>">Manage Tasks</a></li>
+        <li><a href="/tasks/create" class="btn btn-ghost <%= active === 'create' ? 'active' : '' %>">Create Task</a></li>
+    </ul>
+</nav>

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Edit Task</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .form-group { margin: 12px 0; }
+        label { display:block; margin-bottom:6px; }
+        input, textarea, select { width:100%; padding:8px; }
+        button { padding:8px 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <%- include('partials/header', { user: user }) %>
+        <%- include('partials/sidebar', { active: 'tasks' }) %>
+
+        <main class="content">
+            <h1>Edit Task</h1>
+            <form method="POST" action="/tasks/<%= task._id %>/update">
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" name="title" value="<%= task.title %>" required>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea name="description"><%= task.description %></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Priority</label>
+                    <div class="segmented" role="radiogroup" aria-label="Priority">
+                        <input type="radio" id="priority-low-<%= task._id %>" name="priority" value="low" class="pri-low" <%= task.priority==='low'? 'checked':'' %>>
+                        <label for="priority-low-<%= task._id %>" class="btn btn-ghost">Low</label>
+
+                        <input type="radio" id="priority-medium-<%= task._id %>" name="priority" value="medium" class="pri-medium" <%= task.priority==='medium'? 'checked':'' %>>
+                        <label for="priority-medium-<%= task._id %>" class="btn btn-ghost">Medium</label>
+
+                        <input type="radio" id="priority-high-<%= task._id %>" name="priority" value="high" class="pri-high" <%= task.priority==='high'? 'checked':'' %>>
+                        <label for="priority-high-<%= task._id %>" class="btn btn-ghost">High</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <div class="segmented" role="radiogroup" aria-label="Status">
+                        <input type="radio" id="status-pending-<%= task._id %>" name="status" value="pending" class="st-pending" <%= task.status==='pending'? 'checked':'' %>>
+                        <label for="status-pending-<%= task._id %>" class="btn btn-ghost">Pending</label>
+
+                        <input type="radio" id="status-inprogress-<%= task._id %>" name="status" value="in-progress" class="st-progress" <%= task.status==='in-progress'? 'checked':'' %>>
+                        <label for="status-inprogress-<%= task._id %>" class="btn btn-ghost">In Progress</label>
+
+                        <input type="radio" id="status-completed-<%= task._id %>" name="status" value="completed" class="st-completed" <%= task.status==='completed'? 'checked':'' %>>
+                        <label for="status-completed-<%= task._id %>" class="btn btn-ghost">Completed</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Due Date (optional)</label>
+                    <input type="date" name="dueDate" value="<%= task.dueDate ? task.dueDate.toISOString().substring(0,10) : '' %>">
+                </div>
+                <button type="submit" class="btn btn-primary">Save</button>
+                <a href="/tasks" class="btn btn-ghost">Cancel</a>
+            </form>
+        </main>
+    </div>
+</body>
+</html>

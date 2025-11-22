@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Task</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .form-group { margin: 12px 0; }
+        label { display:block; margin-bottom:6px; }
+        input, textarea, select { width:100%; padding:8px; }
+        button { padding:8px 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <%- include('partials/header', { user: user }) %>
+        <%- include('partials/sidebar', { active: 'create' }) %>
+
+        <main class="content">
+            <h1>Create Task</h1>
+            <% if (error) { %>
+                <p style="color:red;"><%= error %></p>
+            <% } %>
+            <form method="POST" action="/tasks/create">
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" name="title" required>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea name="description"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Priority</label>
+                    <div class="segmented" role="radiogroup" aria-label="Priority">
+                        <input type="radio" id="priority-low" name="priority" value="low" class="pri-low">
+                        <label for="priority-low" class="btn btn-ghost">Low</label>
+
+                        <input type="radio" id="priority-medium" name="priority" value="medium" checked class="pri-medium">
+                        <label for="priority-medium" class="btn btn-ghost">Medium</label>
+
+                        <input type="radio" id="priority-high" name="priority" value="high" class="pri-high">
+                        <label for="priority-high" class="btn btn-ghost">High</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <div class="segmented" role="radiogroup" aria-label="Status">
+                        <input type="radio" id="status-pending" name="status" value="pending" checked class="st-pending">
+                        <label for="status-pending" class="btn btn-ghost">Pending</label>
+
+                        <input type="radio" id="status-inprogress" name="status" value="in-progress" class="st-progress">
+                        <label for="status-inprogress" class="btn btn-ghost">In Progress</label>
+
+                        <input type="radio" id="status-completed" name="status" value="completed" class="st-completed">
+                        <label for="status-completed" class="btn btn-ghost">Completed</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Due Date (optional)</label>
+                    <input type="date" name="dueDate">
+                </div>
+                <button type="submit" class="btn btn-primary">Create</button>
+                <a href="/tasks" class="btn btn-ghost">Cancel</a>
+            </form>
+        </main>
+    </div>
+</body>
+</html>
