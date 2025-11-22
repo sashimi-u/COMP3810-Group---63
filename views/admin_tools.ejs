@@ -5,7 +5,6 @@
   <title>Admin Tools</title>
   <link rel="stylesheet" href="/css/style.css">
   <style>
-    body { font-family: Arial; margin: 20px; }
     table { border-collapse: collapse; width: 100%; }
     th, td { border: 1px solid #ddd; padding: 8px; }
     th { background: #f3f3f3; }
@@ -13,51 +12,58 @@
   </style>
 </head>
 <body>
-  <h1>Admin Tools</h1>
-  <p>Welcome, <%= user.username %> (role: <%= user.role %>)</p>
+  <div class="container">
+    <%- include('partials/header', { user: user }) %>
+    <%- include('partials/sidebar', { active: 'admin' }) %>
 
-  <div class="controls">
-    <button id="btnLoadUsers">Show Website Users</button>
-  </div>
+    <main class="content">
+      <h1>Admin Tools</h1>
+      <p>Welcome, <%= user.username %> (role: <%= user.role %>)</p>
 
-  <div id="result">
-    <!-- users table will be injected here -->
-  </div>
+      <div class="controls">
+        <button id="btnLoadUsers">Show Website Users</button>
+      </div>
 
-  <p><a href="/dashboard">← Back to Dashboard</a></p>
+      <div id="result">
+        <!-- users table will be injected here -->
+      </div>
 
-  <script>
-    document.getElementById('btnLoadUsers').addEventListener('click', async () => {
-      const resDiv = document.getElementById('result');
-      resDiv.innerHTML = '<p>Loading...</p>';
-      try {
-        const resp = await fetch('/admin/users', { credentials: 'same-origin' });
-        if (!resp.ok) {
-          const txt = await resp.text();
-          resDiv.innerHTML = '<p style="color:red;">Error: ' + resp.status + ' ' + txt + '</p>';
-          return;
-        }
-        const data = await resp.json();
-        if (!data.users) { resDiv.innerHTML = '<p>No users returned</p>'; return; }
+      <p><a href="/dashboard">← Back to Dashboard</a></p>
 
-        let html = '<h2>Users (' + data.count + ')</h2>';
-        html += '<table><thead><tr><th>Username</th><th>Role</th><th>Created At</th><th>Online</th><th>Last Active</th></tr></thead><tbody>';
-        data.users.forEach(u => {
-          html += '<tr>' +
-                  '<td>' + (u.username||'') + '</td>' +
-                  '<td>' + (u.role||'') + '</td>' +
-                  '<td>' + (u.createdAt ? new Date(u.createdAt).toLocaleString() : '') + '</td>' +
-                  '<td>' + (u.online ? 'Yes' : 'No') + '</td>' +
-                  '<td>' + (u.lastActive ? new Date(u.lastActive).toLocaleString() : '') + '</td>' +
-                  '</tr>';
+      <script>
+        document.getElementById('btnLoadUsers').addEventListener('click', async () => {
+          const resDiv = document.getElementById('result');
+          resDiv.innerHTML = '<p>Loading...</p>';
+          try {
+            const resp = await fetch('/admin/users', { credentials: 'same-origin' });
+            if (!resp.ok) {
+              const txt = await resp.text();
+              resDiv.innerHTML = '<p style="color:red;">Error: ' + resp.status + ' ' + txt + '</p>';
+              return;
+            }
+            const data = await resp.json();
+            if (!data.users) { resDiv.innerHTML = '<p>No users returned</p>'; return; }
+
+            let html = '<h2>Users (' + data.count + ')</h2>';
+            html += '<table><thead><tr><th>Username</th><th>Role</th><th>Created At</th><th>Online</th><th>Last Active</th></tr></thead><tbody>';
+            data.users.forEach(u => {
+              html += '<tr>' +
+                      '<td>' + (u.username||'') + '</td>' +
+                      '<td>' + (u.role||'') + '</td>' +
+                      '<td>' + (u.createdAt ? new Date(u.createdAt).toLocaleString() : '') + '</td>' +
+                      '<td>' + (u.online ? 'Yes' : 'No') + '</td>' +
+                      '<td>' + (u.lastActive ? new Date(u.lastActive).toLocaleString() : '') + '</td>' +
+                      '</tr>';
+            });
+            html += '</tbody></table>';
+            resDiv.innerHTML = html;
+          } catch (err) {
+            resDiv.innerHTML = '<p style="color:red;">Request failed</p>';
+            console.error(err);
+          }
         });
-        html += '</tbody></table>';
-        resDiv.innerHTML = html;
-      } catch (err) {
-        resDiv.innerHTML = '<p style="color:red;">Request failed</p>';
-        console.error(err);
-      }
-    });
-  </script>
+      </script>
+    </main>
+  </div>
 </body>
 </html>

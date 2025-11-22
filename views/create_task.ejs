@@ -2,8 +2,8 @@
 <html>
 <head>
     <title>Create Task</title>
+    <link rel="stylesheet" href="/css/style.css">
     <style>
-        body { font-family: Arial; max-width: 600px; margin: 40px auto; }
         .form-group { margin: 12px 0; }
         label { display:block; margin-bottom:6px; }
         input, textarea, select { width:100%; padding:8px; }
@@ -11,41 +11,48 @@
     </style>
 </head>
 <body>
-    <h1>Create Task</h1>
-    <% if (error) { %>
-        <p style="color:red;"><%= error %></p>
-    <% } %>
-    <form method="POST" action="/tasks/create">
-        <div class="form-group">
-            <label>Title</label>
-            <input type="text" name="title" required>
-        </div>
-        <div class="form-group">
-            <label>Description</label>
-            <textarea name="description"></textarea>
-        </div>
-        <div class="form-group">
-            <label>Priority</label>
-            <select name="priority">
-                <option value="low">Low</option>
-                <option value="medium" selected>Medium</option>
-                <option value="high">High</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label>Status</label>
-            <select name="status">
-                <option value="pending" selected>Pending</option>
-                <option value="in-progress">In Progress</option>
-                <option value="completed">Completed</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label>Due Date (optional)</label>
-            <input type="date" name="dueDate">
-        </div>
-        <button type="submit">Create</button>
-        <a href="/tasks" style="margin-left:12px;">Cancel</a>
-    </form>
+    <div class="container">
+        <%- include('partials/header', { user: user }) %>
+        <%- include('partials/sidebar', { active: 'create' }) %>
+
+        <main class="content">
+            <h1>Create Task</h1>
+            <% if (error) { %>
+                <p style="color:red;"><%= error %></p>
+            <% } %>
+            <form method="POST" action="/tasks/create">
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" name="title" required>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea name="description"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Priority</label>
+                    <select name="priority">
+                        <option value="low">Low</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select name="status">
+                        <option value="pending" selected>Pending</option>
+                        <option value="in-progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Due Date (optional)</label>
+                    <input type="date" name="dueDate">
+                </div>
+                <button type="submit">Create</button>
+                <a href="/tasks" style="margin-left:12px;">Cancel</a>
+            </form>
+        </main>
+    </div>
 </body>
 </html>

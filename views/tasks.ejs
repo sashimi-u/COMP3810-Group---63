@@ -2,38 +2,38 @@
 <html>
 <head>
     <title>Tasks</title>
+    <link rel="stylesheet" href="/css/style.css">
     <style>
-        body { font-family: Arial; margin: 20px; }
         .task { border: 1px solid #ddd; padding: 15px; margin: 10px 0; }
-        .header { display: flex; justify-content: space-between; }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>Tasks</h1>
-        <div>
-            Welcome, <%= user.username %>!
-            <a href="/tasks/create" style="margin-right:12px;">Create Task</a>
-            <form action="/logout" method="POST" style="display: inline;">
-                <button type="submit">Logout</button>
-            </form>
-        </div>
-    </div>
-    
-    <% tasks.forEach(task => { %>
-        <div class="task">
-            <h3><%= task.title %></h3>
-            <p><%= task.description %></p>
-            <p>Priority: <%= task.priority %> | Status: <%= task.status %></p>
-            <div style="margin-top:8px;">
-                <a href="/tasks/<%= task._id %>/edit">Edit</a>
-                <form action="/tasks/<%= task._id %>/delete" method="POST" style="display:inline; margin-left:8px;">
-                    <button type="submit">Delete</button>
-                </form>
+    <div class="container">
+        <%- include('partials/header', { user: user }) %>
+        <%- include('partials/sidebar', { active: 'tasks' }) %>
+
+        <main class="content">
+            <h1>Tasks</h1>
+            <div style="margin-bottom:12px;">
+                <a href="/tasks/create" class="btn btn-primary">Create Task</a>
             </div>
-        </div>
-    <% }); %>
-    
-    <p><a href="/">← Back to Home</a></p>
+
+            <% tasks.forEach(task => { %>
+                <div class="task">
+                    <h3><%= task.title %></h3>
+                    <p><%= task.description %></p>
+                    <p>Priority: <%= task.priority %> | Status: <%= task.status %></p>
+                    <div style="margin-top:8px;">
+                        <a href="/tasks/<%= task._id %>/edit">Edit</a>
+                        <form action="/tasks/<%= task._id %>/delete" method="POST" style="display:inline; margin-left:8px;">
+                            <button type="submit">Delete</button>
+                        </form>
+                    </div>
+                </div>
+            <% }); %>
+
+            <p><a href="/">← Back to Home</a></p>
+        </main>
+    </div>
 </body>
 </html>
