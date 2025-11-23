@@ -135,6 +135,33 @@ app.get('/login', (req, res) => {
   res.render('login', { error: null });
 });
 
+// Registration routes
+app.get('/register', (req, res) => {
+  res.render('register', { error: null });
+});
+
+app.post('/register', async (req, res) => {
+  const { username, password } = req.body;
+  if (!dbConnected) {
+    return res.render('register', { error: 'Registration unavailable: database not connected' });
+  }
+  if (!username || !password) {
+    return res.render('register', { error: 'Username and password are required' });
+  }
+  try {
+    const existing = await User.findOne({ username });
+    if (existing) return res.render('register', { error: 'Username already taken' });
+
+    const hash = await bcrypt.hash(password, 10);
+    const user = new User({ username, passwordHash: hash, role: 'normal' });
+    await user.save();
+    return res.redirect('/login');
+  } catch (err) {
+    console.error('Register error:', err);
+    return res.render('register', { error: 'Registration failed' });
+  }
+});
+
 app.post('/login', async (req, res) => {
   const { username, password } = req.body;
 
