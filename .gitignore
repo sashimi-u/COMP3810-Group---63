@@ -1,6 +1,50 @@
-
+# Node.js
 node_modules/
-npm-debug.log
+
+# dotenv
 .env
+models/.env
+.env.local
+.env.*.local
+
+# Logs
+logs
+*.log
+npm-debug.log*
+Yarn-error.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+
+# Coverage
+coverage/
+nyc_output/
+
+# Build outputs
+dist/
+build/
+
+# IDEs and editors
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# macOS
 .DS_Store
 
+# OS generated files
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
+
+# Misc
+.env.test
+npm-debug.log*
+coverage/
+
+# Ignore local VS Code settings
+.vscode/
