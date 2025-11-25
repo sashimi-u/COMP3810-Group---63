@@ -58,7 +58,6 @@ mongoose.connect(MONGO_URL, {
   ensureAdminAtStartup(ADMIN_USERNAME);
 }).catch(err => {
   console.error('❌ MongoDB connection failed:', err);
-  console.error('Exiting: no fallback configured.');
   process.exit(1);
 });
 
