@@ -45,6 +45,9 @@ docker-compose.override.yml
 .env.test
 npm-debug.log*
 coverage/
+ 
+# Lockfile
+package-lock.json
 
 # Ignore local VS Code settings
 .vscode/
