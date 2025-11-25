@@ -23,6 +23,12 @@ const taskSchema = new mongoose.Schema({
   dueDate: {
     type: Date
   }
+  ,
+  // reference to the user who created / owns the task
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }
 }, {
   timestamps: true
 });

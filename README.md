@@ -10,7 +10,7 @@
 npm install
 ```
 
-2. 啟動 MongoDB（若要使用資料庫），預設連線： `mongodb://localhost:27017/taskmanager`。若未連線，應用會使用記憶體內建示範資料（重啟後會遺失）。
+2. 啟動 MongoDB（若要使用資料庫），請設定 `MONGO_URL` 環境變數（例如 `mongodb+srv://<user>:<password>@cluster0...`）。本專案的 scripts 與工具在未設定 `MONGO_URL` 時會明確報錯，主應用在啟動時也會優先使用環境變數或 `models/scripts/config.json` 中的設定。
 
 3. 啟動伺服器
 
@@ -42,7 +42,7 @@ http://localhost:3000
 
 ```bash
 # 範例：建立使用者 alice 密碼 alice
-node scripts/createUser.js alice alice
+node models/scripts/createUser.js alice alice
 ```
 
 - 有一個 `ensureAdmin` 機制會在 DB 可用時確保特定使用者為 admin（設定環境變數 `ADMIN_USERNAME` 以指定使用者）。
@@ -89,7 +89,7 @@ PORT=3001 npm start
 - `models/` — `User.js`, `Task.js`（Mongoose schema）
 - `views/` — EJS 模板（含 `views/partials`：`header`, `sidebar`, `dashbox`）
 - `public/css/style.css` — 全域樣式（按鈕、表格、任務卡、響應式布局）
-- `scripts/createUser.js` — CLI 建立使用者（bcrypt）
+- `models/scripts/createUser.js` — CLI 建立使用者（bcrypt）
 
 ## 我可以幫忙的事情
 - 如果你要我啟動伺服器做快速檢查，我可以先檢查 3000 埠狀態並用 `PORT=3001` 啟動（或協助停止現有程序）。

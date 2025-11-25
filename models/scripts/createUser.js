@@ -8,11 +8,15 @@ const User = require(path.join(__dirname, '..', 'models', 'User'));
 async function main() {
   const [,, username, password, role = 'normal'] = process.argv;
   if (!username || !password) {
-    console.error('Usage: node scripts/createUser.js <username> <password> [role]');
+    console.error('Usage: node models/scripts/createUser.js <username> <password> [role]');
     process.exit(1);
   }
 
-  const mongoUrl = 'mongodb://localhost:27017/taskmanager';
+  const mongoUrl = process.env.MONGO_URL;
+  if (!mongoUrl) {
+    console.error('Environment variable MONGO_URL is required for this script.');
+    process.exit(1);
+  }
   await mongoose.connect(mongoUrl, { useNewUrlParser: true, useUnifiedTopology: true });
 
   try {
@@ -22,10 +26,8 @@ async function main() {
       process.exit(1);
     }
 
-    const saltRounds = 10;
-    const hash = await bcrypt.hash(password, saltRounds);
-
-    const user = new User({ username, passwordHash: hash, role });
+    // model will hash the password in its pre-save hook
+    const user = new User({ username, password, role });
     await user.save();
     console.log(`Created user: ${username} (role: ${role})`);
     process.exit(0);

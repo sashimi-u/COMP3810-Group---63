@@ -3,7 +3,11 @@ const path = require('path');
 const User = require(path.join(__dirname, '..', 'models', 'User'));
 
 async function main() {
-  const mongoUrl = process.env.MONGO_URL || 'mongodb://localhost:27017/taskmanager';
+  const mongoUrl = process.env.MONGO_URL;
+  if (!mongoUrl) {
+    console.error('Environment variable MONGO_URL is required for this script.');
+    process.exit(1);
+  }
   console.log('Connecting to', mongoUrl);
   try {
     await mongoose.connect(mongoUrl, { useNewUrlParser: true, useUnifiedTopology: true });

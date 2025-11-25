@@ -2,6 +2,12 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cookieSession = require('cookie-session');
 const path = require('path');
+// Load environment variables from `models/.env` when present
+try {
+  require('dotenv').config({ path: path.join(__dirname, 'models', '.env') });
+} catch (e) {
+  // If dotenv is not installed, we'll continue — process.env may be set externally.
+}
 const bcrypt = require('bcryptjs');
 const fs = require('fs');
 
@@ -11,17 +17,21 @@ const app = express();
 // take precedence. This allows quick local customization without changing code.
 let config = {};
 try {
-  const cfgPath = path.join(__dirname, 'scripts', 'config.json');
+  const cfgPath = path.join(__dirname, 'models', 'scripts', 'config.json');
   if (fs.existsSync(cfgPath)) {
     const raw = fs.readFileSync(cfgPath, 'utf8');
     config = JSON.parse(raw || '{}');
   }
 } catch (err) {
-  console.warn('Warning: failed to read scripts/config.json — using defaults or env vars');
+  console.warn('Warning: failed to read models/scripts/config.json — using defaults or env vars');
 }
 
-const PORT = process.env.PORT || config.port || 3000;
-const MONGO_URL = process.env.MONGO_URL || config.mongoUrl || 'mongodb://localhost:27017/taskmanager';
+const PORT = process.env.PORT;
+const MONGO_URL = process.env.MONGO_URL;
+if (!MONGO_URL) {
+  console.error('Environment variable MONGO_URL is required. Set it and restart the server.');
+  process.exit(1);
+}
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || config.adminUsername || 'admin';
 
 app.use(express.json());
@@ -70,14 +80,7 @@ app.use((req, res, next) => {
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-const TaskSchema = new mongoose.Schema({
-  title: String,
-  description: String,
-  priority: String,
-  status: String
-});
-
-const Task = mongoose.model('Task', TaskSchema);
+const Task = require('./models/Task');
 const { ensureAdminAtStartup } = require('./models/ensureAdmin');
 const User = require('./models/User');
 
@@ -152,8 +155,7 @@ app.post('/register', async (req, res) => {
     const existing = await User.findOne({ username });
     if (existing) return res.render('register', { error: 'Username already taken' });
 
-    const hash = await bcrypt.hash(password, 10);
-    const user = new User({ username, passwordHash: hash, role: 'normal' });
+    const user = new User({ username, password, role: 'normal' });
     await user.save();
     return res.redirect('/login');
   } catch (err) {
@@ -175,11 +177,11 @@ app.post('/login', async (req, res) => {
     const user = await User.findOne({ username });
     if (!user) return res.render('login', { error: 'Invalid credentials' });
 
-    const match = await bcrypt.compare(password, user.passwordHash);
+    const match = user.comparePassword(password);
     if (!match) return res.render('login', { error: 'Invalid credentials' });
 
     req.session = req.session || {};
-    req.session.user = { username: user.username, role: user.role };
+    req.session.user = { username: user.username, role: user.role, _id: user._id.toString() };
     const redirectTo = (req.session && req.session.returnTo) ? req.session.returnTo : '/dashboard';
     req.session.returnTo = null;
     return res.redirect(redirectTo);
@@ -270,7 +272,8 @@ app.post('/tasks/create', requireAuth, async (req, res) => {
   if (!title) return res.render('create_task', { user: req.session ? req.session.user : null, error: 'Title is required' });
   try {
     if (dbConnected) {
-      const newTask = new Task({ title, description, priority, status, dueDate: dueDate || undefined });
+      const createdBy = req.session && req.session.user ? req.session.user._id : undefined;
+      const newTask = new Task({ title, description, priority, status, dueDate: dueDate || undefined, createdBy });
       await newTask.save();
     } else {
       const newTask = { _id: getNextInMemoryId(), title, description, priority, status };
@@ -384,7 +387,8 @@ app.post('/api/tasks', async (req, res) => {
 
   try {
     if (dbConnected) {
-      const newTask = new Task({ title, description, priority, status });
+      const createdBy = req.session && req.session.user ? req.session.user._id : undefined;
+      const newTask = new Task({ title, description, priority, status, createdBy });
       const saved = await newTask.save();
       return res.status(201).json(saved);
     } else {

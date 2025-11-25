@@ -7,11 +7,15 @@ const User = require(path.join(__dirname, '..', 'models', 'User'));
 async function main() {
   const [,, username] = process.argv;
   if (!username) {
-    console.error('Usage: node scripts/ensureAdmin.js <username>');
+    console.error('Usage: node models/scripts/ensureAdmin.js <username>');
     process.exit(1);
   }
 
-  const mongoUrl = 'mongodb://localhost:27017/taskmanager';
+  const mongoUrl = process.env.MONGO_URL;
+  if (!mongoUrl) {
+    console.error('Environment variable MONGO_URL is required for this script.');
+    process.exit(1);
+  }
   await mongoose.connect(mongoUrl, { useNewUrlParser: true, useUnifiedTopology: true });
 
   try {
