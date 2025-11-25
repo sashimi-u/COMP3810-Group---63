@@ -6,7 +6,6 @@ require('dotenv').config({ path: path.join(__dirname, 'models', '.env') });
 
 const bcrypt = require('bcryptjs');
 const fs = require('fs');
-const csurf = require('csurf');
 const app = express();
 const PORT = process.env.PORT;
 const MONGO_URL = process.env.MONGO_URL;
@@ -20,65 +19,20 @@ app.use(cookieSession({
   keys: process.env.SESSION_KEYS ? process.env.SESSION_KEYS.split(',') : (config.sessionKeys),
   maxAge: 24 * 60 * 1000
 }));
+// flash (session-backed)
+app.use(require('./models/middleware/flash'));
 
-// Simple flash middleware (session-backed)
-app.use((req, res, next) => {
-  res.locals.flash = req.session && req.session.flash ? req.session.flash : null;
-  if (req.session) delete req.session.flash;
-  next();
-});
+// CSRF filter (skip API routes)
+app.use(require('./models/middleware/csrfFilter'));
 
-// Apply CSRF middleware for non-API routes only
-const csrfProtection = csurf();
-app.use((req, res, next) => {
-  if (req.path.startsWith('/api/')) return next();
-  return csrfProtection(req, res, next);
-});
-
-// expose csrf token to views
-app.use((req, res, next) => {
-  try {
-    res.locals.csrfToken = req.csrfToken();
-  } catch (e) {
-    res.locals.csrfToken = undefined;
-  }
-  next();
-});
-
-// expose a convenient variable to templates to show demo buttons only in non-production
-app.use((req, res, next) => {
-  res.locals.showDemo = process.env.NODE_ENV !== 'production';
-  next();
-});
+// expose csrf token and demo flag to views
+app.use(require('./models/middleware/exposeLocals'));
 
 const serverStartId = Date.now().toString();
 
-// Middleware: if the client's session was created under a different server
-// start (i.e. server was restarted), clear the cookie-session so clients
-// are forced to re-authenticate. For unauthenticated clients we just set
-// a marker so they won't be repeatedly cleared on every request.
-app.use((req, res, next) => {
-  try {
-    const clientServerId = req.session && req.session._serverStart;
-
-    if (clientServerId !== serverStartId) {
-      // If the client had an authenticated session (e.g. `user`), clear it
-      if (req.session && req.session.user) {
-        req.session = null;
-        res.clearCookie('session');
-      } else {
-        // For unauthenticated clients, add the current server marker so
-        // we don't clear them repeatedly on subsequent requests.
-        req.session = req.session || {};
-        req.session._serverStart = serverStartId;
-      }
-    }
-  } catch (err) {
-    // If anything goes wrong with reading/clearing the session, continue
-    // without blocking the request.
-  }
-  next();
-});
+// Middleware: if the client's session was created under a different server start,
+// clear the cookie-session so clients are forced to re-authenticate.
+app.use(require('./models/middleware/serverStartGuard')(serverStartId));
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -96,15 +50,6 @@ app.use(refreshLastActive);
 
 // ...existing code...
 let dbConnected = false;
-
-// simple in-memory fallback data store
-let inMemoryTasks = [
-  { _id: '1', title: 'Sample Task 1', description: 'Database not available', priority: 'high', status: 'pending' },
-  { _id: '2', title: 'Sample Task 2', description: 'Using demo data', priority: 'medium', status: 'in-progress' }
-];
-
-// Helper: Return next sequential `_id` for in-memory tasks (keeps IDs numeric strings)
-const getNextInMemoryId = require('./models/helpers/getNextInMemoryId');
 
 mongoose.connect(MONGO_URL, {
   useNewUrlParser: true,
@@ -216,18 +161,16 @@ app.post('/demo-login', async (req, res) => {
 app.get('/tasks', async (req, res) => {
   if (!req.session || !req.session.user) return res.redirect('/login');
   
-  let tasks;
   try {
-    if (dbConnected) {
-      tasks = await Task.find();
-    } else {
-      tasks = inMemoryTasks;
+    if (!dbConnected) {
+      return res.render('tasks', { tasks: [], user: req.session ? req.session.user : null, pageError: 'Database not connected' });
     }
+    const tasks = await Task.find();
+    return res.render('tasks', { tasks: tasks, user: req.session ? req.session.user : null });
   } catch (error) {
-    tasks = inMemoryTasks;
+    console.error('Error fetching tasks:', error);
+    return res.status(500).render('tasks', { tasks: [], user: req.session ? req.session.user : null, pageError: 'Unable to fetch tasks' });
   }
-  
-  res.render('tasks', { tasks: tasks, user: req.session ? req.session.user : null });
 });
 
 // simple auth middleware
@@ -239,19 +182,15 @@ const requireAdmin = require('./models/middleware/requireAdmin');
 // Dashboard page
 app.get('/dashboard', requireAuth, async (req, res) => {
   try {
-    let total = 0, pending = 0, inProgress = 0, completed = 0;
-
+    let total, pending, inProgress, completed;
     if (dbConnected) {
       total = await Task.countDocuments();
       pending = await Task.countDocuments({ status: 'pending' });
       inProgress = await Task.countDocuments({ status: 'in-progress' });
       completed = await Task.countDocuments({ status: 'completed' });
     } else {
-      const tasks = inMemoryTasks || [];
-      total = tasks.length;
-      pending = tasks.filter(t => t.status === 'pending').length;
-      inProgress = tasks.filter(t => t.status === 'in-progress').length;
-      completed = tasks.filter(t => t.status === 'completed').length;
+      // leave counts undefined so template shows placeholders
+      total = pending = inProgress = completed = undefined;
     }
 
     res.render('dashboard', {
@@ -281,15 +220,13 @@ app.post('/tasks/create', requireAuth, async (req, res) => {
   const { title, description, priority = 'medium', status = 'pending', dueDate } = req.body;
   if (!title) return res.render('create_task', { user: req.session ? req.session.user : null, error: 'Title is required' });
   try {
-    if (dbConnected) {
-      const createdBy = req.session && req.session.user ? req.session.user._id : undefined;
-      const newTask = new Task({ title, description, priority, status, dueDate: dueDate || undefined, createdBy });
-      await newTask.save();
-    } else {
-      const newTask = { _id: getNextInMemoryId(), title, description, priority, status };
-      inMemoryTasks.push(newTask);
+    if (!dbConnected) {
+      return res.render('create_task', { user: req.session ? req.session.user : null, error: 'Cannot create tasks: database not connected' });
     }
-    res.redirect('/tasks');
+    const createdBy = req.session && req.session.user ? req.session.user._id : undefined;
+    const newTask = new Task({ title, description, priority, status, dueDate: dueDate || undefined, createdBy });
+    await newTask.save();
+    return res.redirect('/tasks');
   } catch (err) {
     res.render('create_task', { user: req.session ? req.session.user : null, error: 'Unable to create task' });
   }
@@ -299,15 +236,14 @@ app.post('/tasks/create', requireAuth, async (req, res) => {
 app.get('/tasks/:id/edit', requireAuth, async (req, res) => {
   const id = req.params.id;
   try {
-    let task;
-    if (dbConnected) {
-      task = await Task.findById(id);
-      if (!task) return res.redirect('/tasks');
-    } else {
-      task = inMemoryTasks.find(t => t._id === id);
-      if (!task) return res.redirect('/tasks');
+    if (!dbConnected) {
+      req.session = req.session || {};
+      req.session.flash = { type: 'error', message: 'Database not connected' };
+      return res.redirect('/tasks');
     }
-    res.render('edit_task', { user: req.session ? req.session.user : null, task });
+    const task = await Task.findById(id);
+    if (!task) return res.redirect('/tasks');
+    return res.render('edit_task', { user: req.session ? req.session.user : null, task });
   } catch (err) {
     res.redirect('/tasks');
   }
@@ -317,13 +253,13 @@ app.post('/tasks/:id/update', requireAuth, async (req, res) => {
   const id = req.params.id;
   const update = req.body;
   try {
-    if (dbConnected) {
-      await Task.findByIdAndUpdate(id, update);
-    } else {
-      const idx = inMemoryTasks.findIndex(t => t._id === id);
-      if (idx !== -1) inMemoryTasks[idx] = { ...inMemoryTasks[idx], ...update };
+    if (!dbConnected) {
+      req.session = req.session || {};
+      req.session.flash = { type: 'error', message: 'Database not connected' };
+      return res.redirect('/tasks');
     }
-    res.redirect('/tasks');
+    await Task.findByIdAndUpdate(id, update);
+    return res.redirect('/tasks');
   } catch (err) {
     res.redirect('/tasks');
   }
@@ -333,13 +269,13 @@ app.post('/tasks/:id/update', requireAuth, async (req, res) => {
 app.post('/tasks/:id/delete', requireAuth, async (req, res) => {
   const id = req.params.id;
   try {
-    if (dbConnected) {
-      await Task.findByIdAndDelete(id);
-    } else {
-      const idx = inMemoryTasks.findIndex(t => t._id === id);
-      if (idx !== -1) inMemoryTasks.splice(idx, 1);
+    if (!dbConnected) {
+      req.session = req.session || {};
+      req.session.flash = { type: 'error', message: 'Database not connected' };
+      return res.redirect('/tasks');
     }
-    res.redirect('/tasks');
+    await Task.findByIdAndDelete(id);
+    return res.redirect('/tasks');
   } catch (err) {
     res.redirect('/tasks');
   }
@@ -361,12 +297,9 @@ app.post('/logout', (req, res) => {
 // GET all tasks
 app.get('/api/tasks', async (req, res) => {
   try {
-    if (dbConnected) {
-      const tasks = await Task.find();
-      return res.json(tasks);
-    } else {
-      return res.json(inMemoryTasks);
-    }
+    if (!dbConnected) return res.status(503).json({ error: 'Database not connected' });
+    const tasks = await Task.find();
+    return res.json(tasks);
   } catch (err) {
     return res.status(500).json({ error: 'Unable to fetch tasks' });
   }
@@ -376,15 +309,10 @@ app.get('/api/tasks', async (req, res) => {
 app.get('/api/tasks/:id', async (req, res) => {
   const id = req.params.id;
   try {
-    if (dbConnected) {
-      const task = await Task.findById(id);
-      if (!task) return res.status(404).json({ error: 'Task not found' });
-      return res.json(task);
-    } else {
-      const task = inMemoryTasks.find(t => t._id === id);
-      if (!task) return res.status(404).json({ error: 'Task not found' });
-      return res.json(task);
-    }
+    if (!dbConnected) return res.status(503).json({ error: 'Database not connected' });
+    const task = await Task.findById(id);
+    if (!task) return res.status(404).json({ error: 'Task not found' });
+    return res.json(task);
   } catch (err) {
     return res.status(500).json({ error: 'Unable to fetch task' });
   }
@@ -396,16 +324,11 @@ app.post('/api/tasks', async (req, res) => {
   if (!title) return res.status(400).json({ error: 'Title is required' });
 
   try {
-    if (dbConnected) {
-      const createdBy = req.session && req.session.user ? req.session.user._id : undefined;
-      const newTask = new Task({ title, description, priority, status, createdBy });
-      const saved = await newTask.save();
-      return res.status(201).json(saved);
-    } else {
-      const newTask = { _id: getNextInMemoryId(), title, description, priority, status };
-      inMemoryTasks.push(newTask);
-      return res.status(201).json(newTask);
-    }
+    if (!dbConnected) return res.status(503).json({ error: 'Database not connected' });
+    const createdBy = req.session && req.session.user ? req.session.user._id : undefined;
+    const newTask = new Task({ title, description, priority, status, createdBy });
+    const saved = await newTask.save();
+    return res.status(201).json(saved);
   } catch (err) {
     return res.status(500).json({ error: 'Unable to create task' });
   }
@@ -416,16 +339,10 @@ app.put('/api/tasks/:id', async (req, res) => {
   const id = req.params.id;
   const update = req.body;
   try {
-    if (dbConnected) {
-      const updated = await Task.findByIdAndUpdate(id, update, { new: true });
-      if (!updated) return res.status(404).json({ error: 'Task not found' });
-      return res.json(updated);
-    } else {
-      const idx = inMemoryTasks.findIndex(t => t._id === id);
-      if (idx === -1) return res.status(404).json({ error: 'Task not found' });
-      inMemoryTasks[idx] = { ...inMemoryTasks[idx], ...update };
-      return res.json(inMemoryTasks[idx]);
-    }
+    if (!dbConnected) return res.status(503).json({ error: 'Database not connected' });
+    const updated = await Task.findByIdAndUpdate(id, update, { new: true });
+    if (!updated) return res.status(404).json({ error: 'Task not found' });
+    return res.json(updated);
   } catch (err) {
     return res.status(500).json({ error: 'Unable to update task' });
   }
@@ -435,16 +352,10 @@ app.put('/api/tasks/:id', async (req, res) => {
 app.delete('/api/tasks/:id', async (req, res) => {
   const id = req.params.id;
   try {
-    if (dbConnected) {
-      const deleted = await Task.findByIdAndDelete(id);
-      if (!deleted) return res.status(404).json({ error: 'Task not found' });
-      return res.json({ message: 'Deleted' });
-    } else {
-      const idx = inMemoryTasks.findIndex(t => t._id === id);
-      if (idx === -1) return res.status(404).json({ error: 'Task not found' });
-      inMemoryTasks.splice(idx, 1);
-      return res.json({ message: 'Deleted' });
-    }
+    if (!dbConnected) return res.status(503).json({ error: 'Database not connected' });
+    const deleted = await Task.findByIdAndDelete(id);
+    if (!deleted) return res.status(404).json({ error: 'Task not found' });
+    return res.json({ message: 'Deleted' });
   } catch (err) {
     return res.status(500).json({ error: 'Unable to delete task' });
   }
