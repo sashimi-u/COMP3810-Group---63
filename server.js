@@ -49,19 +49,17 @@ const refreshLastActive = require('./models/middleware/refreshLastActive')(onlin
 app.use(refreshLastActive);
 
 // ...existing code...
-let dbConnected = false;
-
 mongoose.connect(MONGO_URL, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 }).then(() => {
-  dbConnected = true;
   console.log('✅ MongoDB connected');
   // Ensure the configured admin user is actually admin when DB is ready
   ensureAdminAtStartup(ADMIN_USERNAME);
 }).catch(err => {
-  dbConnected = false;
-  console.log('❌ MongoDB connection failed, using in-memory data');
+  console.error('❌ MongoDB connection failed:', err);
+  console.error('Exiting: no fallback configured.');
+  process.exit(1);
 });
 
 // web UI routes (unchanged)
@@ -81,9 +79,6 @@ app.get('/register', (req, res) => {
 
 app.post('/register', async (req, res) => {
   const { username, password } = req.body;
-  if (!dbConnected) {
-    return res.render('register', { error: 'Registration unavailable: database not connected' });
-  }
   if (!username || !password) {
     return res.render('register', { error: 'Username and password are required' });
   }
@@ -104,10 +99,6 @@ app.post('/login', async (req, res) => {
   const { username, password } = req.body;
 
   // Authenticate against the users collection in the database only
-  if (!dbConnected) {
-    // If there's no DB connection, do not allow login (no hardcoded fallback)
-    return res.render('login', { error: 'Login unavailable: database not connected' });
-  }
 
   try {
     const user = await User.findOne({ username });
@@ -127,44 +118,13 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// Demo login route for development/testing only
-app.post('/demo-login', async (req, res) => {
-  try {
-    if (process.env.NODE_ENV === 'production') {
-      return res.status(403).send('Demo login disabled in production');
-    }
-
-    const type = req.body.type;
-    const demoUsername = type === 'admin' ? (process.env.ADMIN_USERNAME || 'admin') : 'alice';
-
-    // Ensure the demo user exists (create if missing)
-    const UserModel = require('./models/User');
-    let user = await UserModel.findOne({ username: demoUsername });
-    if (!user) {
-      const demoPassword = type === 'admin' ? (process.env.ADMIN_PASSWORD || 'admin') : 'alice';
-      const role = type === 'admin' ? 'admin' : 'normal';
-      user = new UserModel({ username: demoUsername, password: demoPassword, role });
-      await user.save();
-      console.log(`Demo: created user ${demoUsername}`);
-    }
-
-    // Set session as authenticated user
-    req.session = req.session || {};
-    req.session.user = { username: user.username, role: user.role, _id: user._id.toString() };
-    return res.redirect('/dashboard');
-  } catch (err) {
-    console.error('Demo login error:', err);
-    return res.redirect('/login');
-  }
-});
+// Demo login removed for security; development/demo accounts
+// should be created via `scripts/` or a dedicated admin flow.
 
 app.get('/tasks', async (req, res) => {
   if (!req.session || !req.session.user) return res.redirect('/login');
   
   try {
-    if (!dbConnected) {
-      return res.render('tasks', { tasks: [], user: req.session ? req.session.user : null, pageError: 'Database not connected' });
-    }
     const tasks = await Task.find();
     return res.render('tasks', { tasks: tasks, user: req.session ? req.session.user : null });
   } catch (error) {
@@ -183,15 +143,10 @@ const requireAdmin = require('./models/middleware/requireAdmin');
 app.get('/dashboard', requireAuth, async (req, res) => {
   try {
     let total, pending, inProgress, completed;
-    if (dbConnected) {
-      total = await Task.countDocuments();
-      pending = await Task.countDocuments({ status: 'pending' });
-      inProgress = await Task.countDocuments({ status: 'in-progress' });
-      completed = await Task.countDocuments({ status: 'completed' });
-    } else {
-      // leave counts undefined so template shows placeholders
-      total = pending = inProgress = completed = undefined;
-    }
+    total = await Task.countDocuments();
+    pending = await Task.countDocuments({ status: 'pending' });
+    inProgress = await Task.countDocuments({ status: 'in-progress' });
+    completed = await Task.countDocuments({ status: 'completed' });
 
     res.render('dashboard', {
       user: req.session ? req.session.user : null,
@@ -220,9 +175,6 @@ app.post('/tasks/create', requireAuth, async (req, res) => {
   const { title, description, priority = 'medium', status = 'pending', dueDate } = req.body;
   if (!title) return res.render('create_task', { user: req.session ? req.session.user : null, error: 'Title is required' });
   try {
-    if (!dbConnected) {
-      return res.render('create_task', { user: req.session ? req.session.user : null, error: 'Cannot create tasks: database not connected' });
-    }
     const createdBy = req.session && req.session.user ? req.session.user._id : undefined;
     const newTask = new Task({ title, description, priority, status, dueDate: dueDate || undefined, createdBy });
     await newTask.save();
@@ -236,11 +188,6 @@ app.post('/tasks/create', requireAuth, async (req, res) => {
 app.get('/tasks/:id/edit', requireAuth, async (req, res) => {
   const id = req.params.id;
   try {
-    if (!dbConnected) {
-      req.session = req.session || {};
-      req.session.flash = { type: 'error', message: 'Database not connected' };
-      return res.redirect('/tasks');
-    }
     const task = await Task.findById(id);
     if (!task) return res.redirect('/tasks');
     return res.render('edit_task', { user: req.session ? req.session.user : null, task });
@@ -253,11 +200,6 @@ app.post('/tasks/:id/update', requireAuth, async (req, res) => {
   const id = req.params.id;
   const update = req.body;
   try {
-    if (!dbConnected) {
-      req.session = req.session || {};
-      req.session.flash = { type: 'error', message: 'Database not connected' };
-      return res.redirect('/tasks');
-    }
     await Task.findByIdAndUpdate(id, update);
     return res.redirect('/tasks');
   } catch (err) {
@@ -269,11 +211,6 @@ app.post('/tasks/:id/update', requireAuth, async (req, res) => {
 app.post('/tasks/:id/delete', requireAuth, async (req, res) => {
   const id = req.params.id;
   try {
-    if (!dbConnected) {
-      req.session = req.session || {};
-      req.session.flash = { type: 'error', message: 'Database not connected' };
-      return res.redirect('/tasks');
-    }
     await Task.findByIdAndDelete(id);
     return res.redirect('/tasks');
   } catch (err) {
@@ -297,7 +234,6 @@ app.post('/logout', (req, res) => {
 // GET all tasks
 app.get('/api/tasks', async (req, res) => {
   try {
-    if (!dbConnected) return res.status(503).json({ error: 'Database not connected' });
     const tasks = await Task.find();
     return res.json(tasks);
   } catch (err) {
@@ -309,7 +245,6 @@ app.get('/api/tasks', async (req, res) => {
 app.get('/api/tasks/:id', async (req, res) => {
   const id = req.params.id;
   try {
-    if (!dbConnected) return res.status(503).json({ error: 'Database not connected' });
     const task = await Task.findById(id);
     if (!task) return res.status(404).json({ error: 'Task not found' });
     return res.json(task);
@@ -324,7 +259,6 @@ app.post('/api/tasks', async (req, res) => {
   if (!title) return res.status(400).json({ error: 'Title is required' });
 
   try {
-    if (!dbConnected) return res.status(503).json({ error: 'Database not connected' });
     const createdBy = req.session && req.session.user ? req.session.user._id : undefined;
     const newTask = new Task({ title, description, priority, status, createdBy });
     const saved = await newTask.save();
@@ -339,7 +273,6 @@ app.put('/api/tasks/:id', async (req, res) => {
   const id = req.params.id;
   const update = req.body;
   try {
-    if (!dbConnected) return res.status(503).json({ error: 'Database not connected' });
     const updated = await Task.findByIdAndUpdate(id, update, { new: true });
     if (!updated) return res.status(404).json({ error: 'Task not found' });
     return res.json(updated);
@@ -352,7 +285,6 @@ app.put('/api/tasks/:id', async (req, res) => {
 app.delete('/api/tasks/:id', async (req, res) => {
   const id = req.params.id;
   try {
-    if (!dbConnected) return res.status(503).json({ error: 'Database not connected' });
     const deleted = await Task.findByIdAndDelete(id);
     if (!deleted) return res.status(404).json({ error: 'Task not found' });
     return res.json({ message: 'Deleted' });
@@ -413,12 +345,6 @@ app.post('/admin/users/delete', requireAdmin, async (req, res) => {
     if (currentUser && currentUser === usernameToDelete) {
       req.session = req.session || {};
       req.session.flash = { type: 'error', message: 'Cannot delete your own admin account.' };
-      return res.redirect('/admin/users/list');
-    }
-
-    if (!dbConnected) {
-      req.session = req.session || {};
-      req.session.flash = { type: 'error', message: 'Cannot delete users while database is disconnected.' };
       return res.redirect('/admin/users/list');
     }
 

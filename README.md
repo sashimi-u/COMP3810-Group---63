@@ -47,6 +47,17 @@ node models/scripts/createUser.js alice alice
 
 - 有一個 `ensureAdmin` 機制會在 DB 可用時確保特定使用者為 admin（設定環境變數 `ADMIN_USERNAME` 以指定使用者）。
 
+## 已移除 Demo 登入
+
+- 為了安全性考量，專案中原本的 `/demo-login` route（允許匿名或以簡單密碼快速登入 demo 帳號）已被移除。
+- 若你需要在開發或測試環境建立示範帳號，請不要恢復舊的 demo-login endpoint；建議使用下列方式之一：
+  - 使用專用腳本建立：`node models/scripts/createUser.js <username> <password>`（上述範例）。
+  - 或在本地 seed script 中建立帳號，並以環境限定（僅在 `NODE_ENV !== 'production'`）執行。
+
+- 注意：若要在開發環境快速登入 admin，請先用腳本建立一個帳號，然後透過 `ensureAdmin` 機制或直接在 DB 設定該帳號為 `admin`。
+
+這樣可以避免在生產環境暴露弱密碼登入點或不受控的 demo 帳號。
+
 ## 視覺與樣式（使用-css 分支）
 - 本專案包含兩個視覺分支：`using-css`（使用共用 CSS）與 `not-using-css`（移除外部 CSS 的簡易樣式）。目前你正在 `using-css` 開發分支。
 - 全域樣式位在 `public/css/style.css`。主要新增與慣例：
@@ -61,12 +72,55 @@ node models/scripts/createUser.js alice alice
 - `PUT /api/tasks/:id` — 更新任務
 - `DELETE /api/tasks/:id` — 刪除任務
 
-示範（建立任務）：
+以下是對應各路由的 `curl` 範例（方便用 CLI 測試）。注意：某些 admin 或受保護的 route 需要有效的 session/cookie 或先登入。
+
+示範：建立任務（POST）
 ```bash
 curl -X POST -H "Content-Type: application/json" \
   -d '{"title":"買牛奶","description":"到超市買一瓶","priority":"low","status":"pending"}' \
   http://localhost:3000/api/tasks
 ```
+
+示範：取得所有任務（GET）
+```bash
+curl http://localhost:3000/api/tasks
+```
+
+示範：取得單一任務（GET）
+```bash
+curl http://localhost:3000/api/tasks/<TASK_ID>
+```
+
+示範：更新任務（PUT）
+```bash
+curl -X PUT -H "Content-Type: application/json" \
+  -d '{"status":"in-progress","priority":"high"}' \
+  http://localhost:3000/api/tasks/<TASK_ID>
+```
+
+示範：刪除任務（DELETE）
+```bash
+curl -X DELETE http://localhost:3000/api/tasks/<TASK_ID>
+```
+
+示範：註冊（使用表單編碼）
+```bash
+curl -X POST -d "username=newuser&password=secret" http://localhost:3000/register
+```
+
+示範：登入（使用表單編碼）
+```bash
+curl -X POST -d "username=alice&password=alice" -c cookies.txt http://localhost:3000/login
+```
+
+- 備註：上例 `-c cookies.txt` 會把伺服器回傳的 cookie 存成檔案；後續若要帶著登入狀態呼叫需要 cookie 的路由（例如 admin API），可用 `-b cookies.txt`：
+
+```bash
+# 範例：以已登入的 cookies 存取 admin 使用者清單（需 admin 權限）
+curl -b cookies.txt http://localhost:3000/admin/users
+```
+
+以上範例旨在協助本機或 CI 測試；若要在生產或公開環境使用，請確保透過 HTTPS 與適當的認證方式保護你的憑證及 cookie。
 
 ## 管理員使用者頁面
 - 新增 server-rendered admin users 頁面：`/admin/users/list`，會呈現所有使用者（需 admin 權限）。舊有的 JSON API `/admin/users` 仍保留供 AJAX 或程式使用。
