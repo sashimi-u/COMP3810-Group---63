@@ -1,15 +1,6 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <title>Edit Task</title>
-    <link rel="stylesheet" href="/css/style.css">
-    <style>
-        .form-group { margin: 12px 0; }
-        label { display:block; margin-bottom:6px; }
-        input, textarea, select { width:100%; padding:8px; }
-        button { padding:8px 12px; }
-    </style>
-</head>
+    <%- include('partials/head', { title: 'Edit Task' }) %>
 <body>
     <div class="container">
         <%- include('partials/header', { user: user }) %>
@@ -18,6 +9,7 @@
         <main class="content">
             <h1>Edit Task</h1>
             <form method="POST" action="/tasks/<%= task._id %>/update">
+                <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
                 <div class="form-group">
                     <label>Title</label>
                     <input type="text" name="title" value="<%= task.title %>" required>

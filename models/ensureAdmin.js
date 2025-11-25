@@ -13,18 +13,41 @@ async function ensureAdminAtStartup(username) {
     // require User model relative to models folder
     // (this file lives in models/, so './User' resolves correctly)
     const User = require('./User');
-    const user = await User.findOne({ username });
-    if (!user) {
-      console.log(`ensureAdmin: user "${username}" not found`);
-      return;
+
+    // Helper to ensure a user exists; if not, create with provided password and role.
+    async function ensureUser(usernameToEnsure, desiredPassword, role = 'normal') {
+      let u = await User.findOne({ username: usernameToEnsure });
+      if (u) return { existed: true, user: u };
+
+      const pw = desiredPassword || usernameToEnsure;
+      u = new User({ username: usernameToEnsure, password: pw, role });
+      await u.save();
+      return { existed: false, user: u };
     }
-    if (user.role === 'admin') {
-      console.log(`ensureAdmin: user "${username}" already admin`);
-      return;
+
+    // Ensure the requested admin user exists and has admin role.
+    let res = await ensureUser(username, username, 'admin');
+    if (res.existed) {
+      const existing = await User.findOne({ username });
+      if (existing.role !== 'admin') {
+        existing.role = 'admin';
+        await existing.save();
+        console.log(`ensureAdmin: promoted "${username}" to admin`);
+      } else {
+        console.log(`ensureAdmin: user "${username}" already admin`);
+      }
+    } else {
+      console.log(`ensureAdmin: created admin "${username}"`);
     }
-    user.role = 'admin';
-    await user.save();
-    console.log(`ensureAdmin: promoted "${username}" to admin`);
+
+    // Also ensure default normal user 'alice' exists with password 'alice'
+    const aliceRes = await ensureUser('alice', 'alice', 'normal');
+    if (aliceRes.existed) {
+      console.log('ensureAdmin: user "alice" already exists');
+    } else {
+      console.log('ensureAdmin: created user "alice"');
+    }
+
   } catch (err) {
     console.error('ensureAdmin error:', err && err.message ? err.message : err);
   }

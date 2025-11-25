@@ -1,15 +1,6 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <meta charset="utf-8" />
-  <title>Website Users</title>
-  <link rel="stylesheet" href="/css/style.css">
-  <style>
-    .users-table { width:100%; border-collapse:collapse; }
-    .users-table th, .users-table td { padding:10px 8px; border:1px solid #e6e6e6; }
-    .users-table th { background:#fafafa; text-align:left; }
-  </style>
-</head>
+  <%- include('partials/head', { title: 'Website Users' }) %>
 <body>
   <div class="container">
     <%- include('partials/header', { user: user }) %>
@@ -39,7 +30,13 @@
               <td><%= u.createdAt ? new Date(u.createdAt).toLocaleString() : '' %></td>
               <td><%= u.online ? 'Yes' : 'No' %></td>
               <td><%= u.lastActive ? new Date(u.lastActive).toLocaleString() : '' %></td>
-              <td class="user-actions"><button class="btn btn-secondary" data-idx="<%= idx %>" onclick="toggleDetails(<%= idx %>)">View</button></td>
+              <td class="user-actions">
+                <form method="POST" action="/admin/users/delete" style="display:inline;margin:0;" onsubmit="return confirm('Delete user <%= u.username %>? This cannot be undone.');">
+                  <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
+                  <input type="hidden" name="username" value="<%= u.username %>">
+                  <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+              </td>
             </tr>
             <tr class="details-row" id="details-<%= idx %>" style="display:none;"><td colspan="6"><div class="user-details">
               Username: <%= u.username %><br/>Role: <%= u.role %><br/>Created At: <%= u.createdAt ? new Date(u.createdAt).toLocaleString() : '' %><br/>Online: <%= u.online ? 'Yes' : 'No' %>
@@ -57,6 +54,14 @@
           el.style.display = el.style.display === 'none' ? 'table-row' : 'none';
         }
       </script>
+      <% if (flash) { %>
+        <script>
+          (function(){
+            const msg = <%- JSON.stringify(flash && flash.message ? flash.message : '') %>;
+            if (msg) alert(msg);
+          })();
+        </script>
+      <% } %>
     </main>
   </div>
 </body>

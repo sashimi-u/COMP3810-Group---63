@@ -1,12 +1,20 @@
 <header class="header-main" role="banner">
     <div class="site-title">Task Manager</div>
     <div class="user-info" role="navigation" aria-label="User controls">
-        <span>Welcome, <strong><%= user.username %></strong></span>
-        <% if (user && user.role === 'admin') { %>
-          <a href="/admin/tools" class="btn btn-ghost">Tools</a>
-        <% } %>
-        <form action="/logout" method="POST" style="display: inline; margin-left:8px;">
-            <button type="submit" class="btn btn-ghost" aria-label="Logout">Logout</button>
-        </form>
+                <span>Welcome, <strong><%= user && user.username ? user.username : 'Guest' %></strong></span>
+                <% if (user && user.role === 'admin') { %>
+                    <a href="/admin/tools" class="btn btn-ghost">Tools</a>
+                <% } %>
+                <form action="/logout" method="POST" style="display: inline; margin-left:8px;">
+                        <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
+                        <button type="submit" class="btn btn-ghost" aria-label="Logout">Logout</button>
+                </form>
     </div>
 </header>
+<% if (flash && !hideInlineFlash) { %>
+    <div class="container">
+        <div class="content">
+            <div class="flash <%= flash.type %>"><%= flash.message %></div>
+        </div>
+    </div>
+<% } %>

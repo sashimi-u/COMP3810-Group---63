@@ -2,36 +2,14 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cookieSession = require('cookie-session');
 const path = require('path');
-// Load environment variables from `models/.env` when present
-try {
-  require('dotenv').config({ path: path.join(__dirname, 'models', '.env') });
-} catch (e) {
-  // If dotenv is not installed, we'll continue — process.env may be set externally.
-}
+require('dotenv').config({ path: path.join(__dirname, 'models', '.env') });
+
 const bcrypt = require('bcryptjs');
 const fs = require('fs');
-
+const csurf = require('csurf');
 const app = express();
-
-// Load optional JSON config from `scripts/config.json`. Environment variables
-// take precedence. This allows quick local customization without changing code.
-let config = {};
-try {
-  const cfgPath = path.join(__dirname, 'models', 'scripts', 'config.json');
-  if (fs.existsSync(cfgPath)) {
-    const raw = fs.readFileSync(cfgPath, 'utf8');
-    config = JSON.parse(raw || '{}');
-  }
-} catch (err) {
-  console.warn('Warning: failed to read models/scripts/config.json — using defaults or env vars');
-}
-
 const PORT = process.env.PORT;
 const MONGO_URL = process.env.MONGO_URL;
-if (!MONGO_URL) {
-  console.error('Environment variable MONGO_URL is required. Set it and restart the server.');
-  process.exit(1);
-}
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || config.adminUsername || 'admin';
 
 app.use(express.json());
@@ -39,15 +17,40 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 app.use(cookieSession({
   name: 'session',
-  keys: process.env.SESSION_KEYS ? process.env.SESSION_KEYS.split(',') : (config.sessionKeys || ['your-secret-key']),
-  // 24 hours
-  maxAge: 24 * 60 * 60 * 1000
+  keys: process.env.SESSION_KEYS ? process.env.SESSION_KEYS.split(',') : (config.sessionKeys),
+  maxAge: 24 * 60 * 1000
 }));
 
-// Unique identifier for this server process start. When the server restarts
-// this value changes — we'll use it to detect a restart on the client side
-// (stored in the client's cookie session) and clear the client's cookie
-// so stale sessions are removed after a server restart.
+// Simple flash middleware (session-backed)
+app.use((req, res, next) => {
+  res.locals.flash = req.session && req.session.flash ? req.session.flash : null;
+  if (req.session) delete req.session.flash;
+  next();
+});
+
+// Apply CSRF middleware for non-API routes only
+const csrfProtection = csurf();
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/')) return next();
+  return csrfProtection(req, res, next);
+});
+
+// expose csrf token to views
+app.use((req, res, next) => {
+  try {
+    res.locals.csrfToken = req.csrfToken();
+  } catch (e) {
+    res.locals.csrfToken = undefined;
+  }
+  next();
+});
+
+// expose a convenient variable to templates to show demo buttons only in non-production
+app.use((req, res, next) => {
+  res.locals.showDemo = process.env.NODE_ENV !== 'production';
+  next();
+});
+
 const serverStartId = Date.now().toString();
 
 // Middleware: if the client's session was created under a different server
@@ -87,14 +90,8 @@ const User = require('./models/User');
 // In-memory tracking of online users: username -> lastActive timestamp
 // Note: This is ephemeral and resets when server restarts.
 const onlineUsers = new Map();
-
 // Middleware to refresh lastActive for authenticated users on each request
-function refreshLastActive(req, res, next) {
-  if (req.session && req.session.user && req.session.user.username) {
-    onlineUsers.set(req.session.user.username, Date.now());
-  }
-  next();
-}
+const refreshLastActive = require('./models/middleware/refreshLastActive')(onlineUsers);
 app.use(refreshLastActive);
 
 // ...existing code...
@@ -106,14 +103,8 @@ let inMemoryTasks = [
   { _id: '2', title: 'Sample Task 2', description: 'Using demo data', priority: 'medium', status: 'in-progress' }
 ];
 
-// Return next sequential `_id` for in-memory tasks (keeps IDs numeric strings)
-function getNextInMemoryId() {
-  const nums = inMemoryTasks
-    .map(t => parseInt(t._id, 10))
-    .filter(n => !Number.isNaN(n));
-  const max = nums.length ? Math.max(...nums) : 0;
-  return String(max + 1);
-}
+// Helper: Return next sequential `_id` for in-memory tasks (keeps IDs numeric strings)
+const getNextInMemoryId = require('./models/helpers/getNextInMemoryId');
 
 mongoose.connect(MONGO_URL, {
   useNewUrlParser: true,
@@ -191,6 +182,37 @@ app.post('/login', async (req, res) => {
   }
 });
 
+// Demo login route for development/testing only
+app.post('/demo-login', async (req, res) => {
+  try {
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(403).send('Demo login disabled in production');
+    }
+
+    const type = req.body.type;
+    const demoUsername = type === 'admin' ? (process.env.ADMIN_USERNAME || 'admin') : 'alice';
+
+    // Ensure the demo user exists (create if missing)
+    const UserModel = require('./models/User');
+    let user = await UserModel.findOne({ username: demoUsername });
+    if (!user) {
+      const demoPassword = type === 'admin' ? (process.env.ADMIN_PASSWORD || 'admin') : 'alice';
+      const role = type === 'admin' ? 'admin' : 'normal';
+      user = new UserModel({ username: demoUsername, password: demoPassword, role });
+      await user.save();
+      console.log(`Demo: created user ${demoUsername}`);
+    }
+
+    // Set session as authenticated user
+    req.session = req.session || {};
+    req.session.user = { username: user.username, role: user.role, _id: user._id.toString() };
+    return res.redirect('/dashboard');
+  } catch (err) {
+    console.error('Demo login error:', err);
+    return res.redirect('/login');
+  }
+});
+
 app.get('/tasks', async (req, res) => {
   if (!req.session || !req.session.user) return res.redirect('/login');
   
@@ -209,22 +231,10 @@ app.get('/tasks', async (req, res) => {
 });
 
 // simple auth middleware
-function requireAuth(req, res, next) {
-  if (!req.session || !req.session.user) {
-    // remember the originally requested URL so we can return after login
-    req.session = req.session || {};
-    req.session.returnTo = req.originalUrl;
-    return res.redirect('/login');
-  }
-  next();
-}
+const requireAuth = require('./models/middleware/requireAuth');
 
 // admin-only middleware
-function requireAdmin(req, res, next) {
-  if (!req.session || !req.session.user) return res.redirect('/login');
-  if (!req.session.user.role || req.session.user.role !== 'admin') return res.status(403).send('Forbidden');
-  next();
-}
+const requireAdmin = require('./models/middleware/requireAdmin');
 
 // Dashboard page
 app.get('/dashboard', requireAuth, async (req, res) => {
@@ -469,14 +479,55 @@ app.get('/admin/users/list', requireAdmin, async (req, res) => {
       online: onlineUsers.has(u.username),
       lastActive: onlineUsers.has(u.username) ? new Date(onlineUsers.get(u.username)).toISOString() : null
     }));
-    return res.render('admin_users', { user: req.session ? req.session.user : null, users: list });
+    return res.render('admin_users', { user: req.session ? req.session.user : null, users: list, hideInlineFlash: true });
   } catch (err) {
     console.error('Admin users page error:', err);
     return res.redirect('/admin/tools');
   }
 });
 
+// Delete a user (admin only)
+app.post('/admin/users/delete', requireAdmin, async (req, res) => {
+  try {
+    const usernameToDelete = req.body && req.body.username;
+
+    if (!usernameToDelete) {
+      req.session = req.session || {};
+      req.session.flash = { type: 'error', message: 'No username provided.' };
+      return res.redirect('/admin/users/list');
+    }
+
+    // Prevent admin from deleting themselves
+    const currentUser = req.session && req.session.user ? req.session.user.username : null;
+    if (currentUser && currentUser === usernameToDelete) {
+      req.session = req.session || {};
+      req.session.flash = { type: 'error', message: 'Cannot delete your own admin account.' };
+      return res.redirect('/admin/users/list');
+    }
+
+    if (!dbConnected) {
+      req.session = req.session || {};
+      req.session.flash = { type: 'error', message: 'Cannot delete users while database is disconnected.' };
+      return res.redirect('/admin/users/list');
+    }
+
+    const deleted = await User.findOneAndDelete({ username: usernameToDelete });
+    req.session = req.session || {};
+    if (!deleted) {
+      req.session.flash = { type: 'error', message: 'User not found.' };
+    } else {
+      if (deleted && deleted.username) onlineUsers.delete(deleted.username);
+      req.session.flash = { type: 'success', message: `Deleted user ${deleted.username}.` };
+    }
+    return res.redirect('/admin/users/list');
+  } catch (err) {
+    console.error('Admin delete user error:', err);
+    req.session = req.session || {};
+    req.session.flash = { type: 'error', message: 'Failed to delete user.' };
+    return res.redirect('/admin/users/list');
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-  console.log(`Open http://localhost:${PORT} in your browser`);
 });

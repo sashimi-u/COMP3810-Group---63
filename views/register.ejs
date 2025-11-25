@@ -1,10 +1,6 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <meta charset="utf-8" />
-  <title>Create Account</title>
-  <link rel="stylesheet" href="/css/style.css">
-</head>
+  <%- include('partials/head', { title: 'Create Account' }) %>
 <body>
   <div class="login-container">
     <form class="login-form" method="POST" aria-label="Register form">
@@ -21,6 +17,7 @@
         <input id="password" name="password" type="password" required autocomplete="new-password">
       </div>
       <div class="form-group">
+        <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
         <button type="submit" class="btn btn-primary">Create</button>
         <a href="/login" class="btn btn-ghost">Cancel</a>
       </div>

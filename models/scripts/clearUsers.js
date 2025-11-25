@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const path = require('path');
-const User = require(path.join(__dirname, '..', 'models', 'User'));
+const User = require(path.join(__dirname, '..', 'User'));
 
 async function main() {
   const mongoUrl = process.env.MONGO_URL;

@@ -7,14 +7,13 @@ const userSchema = new mongoose.Schema({
     required: true,
     unique: true,
     trim: true,
-    minlength: 3,
-    maxlength: 30
+    // removed minlength/maxlength to allow flexible username lengths
   },
   // store the hashed password in `password` for compatibility with remote repo
   password: {
     type: String,
     required: true,
-    minlength: 6
+    
   },
   role: {
     type: String,

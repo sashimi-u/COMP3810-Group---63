@@ -1,15 +1,6 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <title>Create Task</title>
-    <link rel="stylesheet" href="/css/style.css">
-    <style>
-        .form-group { margin: 12px 0; }
-        label { display:block; margin-bottom:6px; }
-        input, textarea, select { width:100%; padding:8px; }
-        button { padding:8px 12px; }
-    </style>
-</head>
+    <%- include('partials/head', { title: 'Create Task' }) %>
 <body>
     <div class="container">
         <%- include('partials/header', { user: user }) %>
@@ -21,6 +12,7 @@
                 <p style="color:red;"><%= error %></p>
             <% } %>
             <form method="POST" action="/tasks/create">
+                <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
                 <div class="form-group">
                     <label>Title</label>
                     <input type="text" name="title" required>
