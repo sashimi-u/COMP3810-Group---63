@@ -51,7 +51,7 @@
 ### models/ folder
 
 - Contains model definitions for interacting with the database.
-- Typical model files (rename to match your project):
+- Typical model files:
   - User.js: Defines user schema, roles (admin/normal user), and authentication-related fields.
   - Event.js: Defines events/tasks schema if your project manages events.
   - Other domain models as required (e.g. Booking.js, Task.js).
