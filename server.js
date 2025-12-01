@@ -9,8 +9,6 @@ const fs = require('fs');
 const app = express();
 const PORT = process.env.PORT;
 const MONGO_URL = process.env.MONGO_URL;
-// Safe defaults: some deployments (e.g. Render) provide env vars directly.
-// Avoid referencing an undefined `config` object which causes a crash on startup.
 const sessionKeys = process.env.SESSION_KEYS ? process.env.SESSION_KEYS.split(',') : ['change-me-session-key'];
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 
@@ -119,9 +117,6 @@ app.post('/login', async (req, res) => {
     return res.render('login', { error: 'Login failed' });
   }
 });
-
-// Demo login removed for security; development/demo accounts
-// should be created via `scripts/` or a dedicated admin flow.
 
 app.get('/tasks', async (req, res) => {
   if (!req.session || !req.session.user) return res.redirect('/login');
