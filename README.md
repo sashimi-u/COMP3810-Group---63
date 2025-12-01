@@ -3,8 +3,8 @@
 - Project name: Task Manager
 - Group: Group 63
 - Students:
+  - U Yat Long(SID:13901050)
   -  (SID: )
-  -  (SID: 13901050)
   - So Chak Lam (SID: 13492330)
   - Tse Cheuk Hin (SID: 13485097)
 
@@ -59,7 +59,7 @@
 ## Cloud-based server URL
 
 - Production/test URL:
-  - https://(neeeeedddddd URLLLLLL)
+  - https://comp3810-group-63-9qvf.onrender.com/login
 
 ## Operation guides (user flow)
 
