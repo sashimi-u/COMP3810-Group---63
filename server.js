@@ -9,14 +9,17 @@ const fs = require('fs');
 const app = express();
 const PORT = process.env.PORT;
 const MONGO_URL = process.env.MONGO_URL;
-const ADMIN_USERNAME = process.env.ADMIN_USERNAME || config.adminUsername || 'admin';
+// Safe defaults: some deployments (e.g. Render) provide env vars directly.
+// Avoid referencing an undefined `config` object which causes a crash on startup.
+const sessionKeys = process.env.SESSION_KEYS ? process.env.SESSION_KEYS.split(',') : ['change-me-session-key'];
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 app.use(cookieSession({
   name: 'session',
-  keys: process.env.SESSION_KEYS ? process.env.SESSION_KEYS.split(',') : (config.sessionKeys),
+  keys: sessionKeys,
   maxAge: 24 * 60 * 1000
 }));
 // flash (session-backed)
