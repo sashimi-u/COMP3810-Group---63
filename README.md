@@ -1,6 +1,3 @@
-Below is a **clean, fully‑renderable `README.md`** that fixes every syntax problem in your draft, adds the missing closing braces in `package.json`, and makes the document look professional on GitHub.
-
-```markdown
 # Task Manager – COMP3810 Group Project
 
 > A full‑stack task‑management system with user roles, dashboard, admin CRUD, and a RESTful API.
