@@ -85,10 +85,10 @@
 1. Open the live URL.  
 2. Use a **pre‑seeded account**:
 
-   | Role | Email | Password |
+   | Role | username | Password |
    |------|-------|----------|
-   | Admin | `admin@example.com` | `Admin123!` |
-   | User  | `user1@example.com` | `User123!` |
+   | Admin | `admin` | `admin` |
+   | User  | `alcie` | `alice` |
 
 3. Click **Login** → redirected to `/dashboard`.  
 4. Click **Logout** (top‑right) → session cleared, back to login.
