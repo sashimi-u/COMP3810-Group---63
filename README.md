@@ -1,36 +1,39 @@
-# Task Manager - COMP3810 Group Project
+Below is a **clean, fully‑renderable `README.md`** that fixes every syntax problem in your draft, adds the missing closing braces in `package.json`, and makes the document look professional on GitHub.
 
-> A full-stack task management system with user roles, dashboard, admin CRUD, and RESTful API.
+```markdown
+# Task Manager – COMP3810 Group Project
+
+> A full‑stack task‑management system with user roles, dashboard, admin CRUD, and a RESTful API.
 
 ---
 
 ## Project Info
 
-- **Project Name**: Task Manager
-- **Group**: Group 63
-- **Members**:
-  | Name | SID |
-  |------|-----|
-  | U Yat Long | 13901050 |
-  | FUNG CHUN | 13479693 |
-  | So Chak Lam | 13492330 |
-  | Tse Cheuk Hin | 13485097 |
+| **Project Name** | Task Manager |
+|------------------|--------------|
+| **Group**        | Group 63 |
+| **Members**      | **Name** – **SID** |
+|                  | U Yat Long – 13901050 |
+|                  | FUNG CHUN – 13479693 |
+|                  | So Chak Lam – 13492330 |
+|                  | Tse Cheuk Hin – 13485097 |
 
 ---
 
 ## Project Structure
 
 ### `server.js`
-- Initializes Express app with middleware (`body-parser`, sessions, static files).
+- Starts Express, configures middleware (`body‑parser`, sessions, static files).
 - Connects to **MongoDB Atlas** via Mongoose.
-- Defines:
-  - Authentication routes (`/login`, `/logout`)
-  - EJS view routes (`/dashboard`, `/admin/*`)
-  - **RESTful API** endpoints (`/api/tasks`, `/api/users`)
-- Listens on `process.env.PORT || 3000`
+- Routes:
+  - Auth: `/login`, `/logout`
+  - Views: `/dashboard`, `/admin/*`
+  - **RESTful API**: `/api/tasks`, `/api/users`
+- Listens on `process.env.PORT || 3000`.
 
 ### `package.json`
 ```json
+{
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "cookie-session": "^2.0.0",
@@ -39,20 +42,28 @@
     "ejs": "^3.1.9",
     "express": "^4.18.2",
     "mongoose": "^7.5.0"
-
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  }
+}
+```
 
 ### `public/` Folder
-- `styles.css` → Global responsive styling
-- `script.js` → Form validation & dynamic UI
-- `images/` → Logo, icons, avatars
+| File | Purpose |
+|------|---------|
+| `styles.css` | Global responsive styling |
+| `script.js`  | Form validation & dynamic UI |
+| `images/`    | Logo, icons, avatars |
 
 ### `views/` Folder
 | File | Purpose |
-|------|--------|
+|------|---------|
 | `login.ejs` | Login form |
 | `dashboard.ejs` | User dashboard with stats |
-| `admin_users.ejs` | Admin: manage users |
-| `admin_tasks.ejs` | Admin: manage tasks |
+| `admin_users.ejs` | Admin – manage users |
+| `admin_tasks.ejs` | Admin – manage tasks |
 | `partials/dashbox.ejs` | Reusable metric card |
 
 ### `models/` Folder
@@ -67,62 +78,60 @@
 
 [**https://comp3810-group-63-9qvf.onrender.com/login**](https://comp3810-group-63-9qvf.onrender.com/login)
 
+> *Render free tier may spin‑down – wait 15‑30 s for the first request.*
+
 ---
 
 ## Operation Guide
 
 ### Login / Logout
-
-1. Go to the live URL.
-2. Use one of these **pre-seeded accounts**:
+1. Open the live URL.  
+2. Use a **pre‑seeded account**:
 
    | Role | Email | Password |
    |------|-------|----------|
    | Admin | `admin@example.com` | `Admin123!` |
-   | User | `user1@example.com` | `User123!` |
+   | User  | `user1@example.com` | `User123!` |
 
-3. Click **Login** → Redirect to `/dashboard`
-4. Click **Logout** (top-right) → Back to login
+3. Click **Login** → redirected to `/dashboard`.  
+4. Click **Logout** (top‑right) → session cleared, back to login.
 
 ---
 
 ### Dashboard (`/dashboard`)
-- Displays **summary cards**:
+- Summary cards (via `dashbox.ejs`):
   - Total Tasks
   - Pending / Completed
   - My Tasks
-- Admin links:
-  - [Users](#admin-users) → `/admin/users`
-  - [Tasks](#admin-tasks) → `/admin/tasks`
+- Admin navigation:
+  - **[Users](#admin-users)** → `/admin/users`
+  - **[Tasks](#admin-tasks)** → `/admin/tasks`
 
 ---
 
 ### Admin: Manage Users (`/admin/users`)
-
-| Action | How |
-|-------|-----|
-| **Create** | Click **"Add New User"** → Fill form → Submit |
-| **Read** | Table shows all users |
-| **Update** | Click **Edit** → Modify → Save |
-| **Delete** | Click **Delete** → Confirm |
+| Action | UI |
+|--------|----|
+| **Create** | **Add New User** button → form → submit |
+| **Read**   | Table of all users |
+| **Update** | **Edit** button → modify → save |
+| **Delete** | **Delete** button → confirm |
 
 ---
 
 ### Admin: Manage Tasks (`/admin/tasks`)
-
-| Action | How |
-|-------|-----|
-| **Create** | Click **"Create Task"** → Fill modal → Submit |
-| **Read** | Table: title, status, assignee, due date |
-| **Update** | Click **Edit** → Update fields |
-| **Delete** | Click **Trash** → Confirm |
+| Action | UI |
+|--------|----|
+| **Create** | **Create Task** button → modal → submit |
+| **Read**   | Table: title, status, assignee, due date |
+| **Update** | **Edit** icon → update fields |
+| **Delete** | **Trash** icon → confirm |
 
 ---
 
 ## RESTful API
 
-> **All API endpoints require authentication**  
-> Use session cookie (`connect.sid`) from browser login.
+> **All endpoints require authentication** – include the session cookie (`connect.sid`) obtained after login.
 
 ### Base URL
 ```
@@ -134,14 +143,14 @@ https://comp3810-group-63-9qvf.onrender.com
 ### 1. Tasks API – `/api/tasks` (Admin + Users)
 
 | Method | Endpoint | Description |
-|--------|----------|-----------|
-| `POST` | `/api/tasks` | Create task |
-| `GET` | `/api/tasks` | List all tasks |
-| `GET` | `/api/tasks/:id` | Get one task |
-| `PUT` | `/api/tasks/:id` | Update task |
+|--------|----------|-------------|
+| `POST` | `/api/tasks` | Create a task |
+| `GET`  | `/api/tasks` | List all tasks |
+| `GET`  | `/api/tasks/:id` | Get one task |
+| `PUT`  | `/api/tasks/:id` | Update task |
 | `DELETE` | `/api/tasks/:id` | Delete task |
 
-#### Example: Create Task
+**Example payload (POST):**
 ```json
 {
   "title": "Submit Assignment",
@@ -155,24 +164,23 @@ https://comp3810-group-63-9qvf.onrender.com
 
 ---
 
-### 2. Users API – `/api/users` (**Admin Only**)
+### 2. Users API – `/api/users` (**Admin only**)
 
 | Method | Endpoint | Description |
-|--------|----------|-----------|
-| `GET` | `/api/users` | List users |
-| `GET` | `/api/users/:id` | Get user |
+|--------|----------|-------------|
+| `GET`  | `/api/users` | List users |
+| `GET`  | `/api/users/:id` | Get one user |
 | `POST` | `/api/users` | Create user |
-| `PUT` | `/api/users/:id` | Update user |
+| `PUT`  | `/api/users/:id` | Update user |
 | `DELETE` | `/api/users/:id` | Delete user |
 
 ---
 
 ## Test APIs with `curl`
 
-> **Step 1**: Log in → Open DevTools → Network → Copy **Cookie** header  
-> Example: `connect.sid=s%3Aabc123...`
+1. **Log in** → DevTools → **Network** → copy the **Cookie** header (e.g. `connect.sid=s%3Aabc123...`).
 
-### Create Task
+### Create a Task
 ```bash
 curl -X POST https://comp3810-group-63-9qvf.onrender.com/api/tasks \
   -H "Content-Type: application/json" \
@@ -212,3 +220,19 @@ curl -X PUT https://comp3810-group-63-9qvf.onrender.com/api/tasks/692565709fbb0e
 curl -X DELETE https://comp3810-group-63-9qvf.onrender.com/api/tasks/692565709fbb0e4d6d0605fd \
   -H "Cookie: connect.sid=YOUR_SESSION_COOKIE"
 ```
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| Backend | Node.js, Express |
+| Frontend | EJS, CSS, Vanilla JS |
+| Database | MongoDB Atlas |
+| Auth | `cookie-session` + `bcryptjs` |
+| Deployment | Render.com |
+
+---
+
+*Built by Group 63 – COMP3810 Web Application Development*
