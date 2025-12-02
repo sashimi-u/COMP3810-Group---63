@@ -3,8 +3,8 @@
 - Project name: Task Manager
 - Group: Group 63
 - Students:
-  - U Yat Long(SID:13901050)
-  -  (SID: )
+  - U Yat Long (SID:13901050)
+  - FUNG CHUN (SID:13479693)
   - So Chak Lam (SID: 13492330)
   - Tse Cheuk Hin (SID: 13485097)
 
