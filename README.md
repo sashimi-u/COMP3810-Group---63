@@ -31,20 +31,15 @@
 
 ### `package.json`
 ```json
-"dependencies": {
-  "express": "^4.18.2",
-  "ejs": "^3.1.9",
-  "mongoose": "^7.6.0",
-  "bcrypt": "^5.1.0",
-  "express-session": "^1.17.3",
-  "connect-mongo": "^5.0.0",
-  "dotenv": "^16.3.1"
-},
-"scripts": {
-  "start": "node server.js",
-  "dev": "nodemon server.js"
-}
-```
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cookie-session": "^2.0.0",
+    "csurf": "^1.11.0",
+    "dotenv": "^17.2.3",
+    "ejs": "^3.1.9",
+    "express": "^4.18.2",
+    "mongoose": "^7.5.0"
+
 
 ### `public/` Folder
 - `styles.css` → Global responsive styling
