@@ -1,130 +1,196 @@
+# Task Manager - COMP3810 Group Project
+
 ## Project info
 
-- Project name: Task Manager
-- Group: Group 63
-- Students:
-  - U Yat Long (SID:13901050)
-  - FUNG CHUN (SID:13479693)
+- **Project name**: Task Manager
+- **Group**: Group 63
+- **Students**:
+  - U Yat Long (SID: 13901050)
+  - FUNG CHUN (SID: 13479693)
   - So Chak Lam (SID: 13492330)
   - Tse Cheuk Hin (SID: 13485097)
+
+---
 
 ## Project file intro
 
 ### server.js
 
-- Initializes the Express application, configures middleware (body parsing, static files, session/auth if applicable), and connects to the database.
+- Initializes the Express application, configures middleware (body parsing, static files, session/auth), and connects to MongoDB via Mongoose.
 - Defines routes for:
-  - Login/logout and basic authentication checks.
-  - Rendering EJS views such as dashboard pages and admin pages.
-  - RESTful CRUD endpoints for main resources (e.g. users, events, tasks).
-- Starts the HTTP server listening on the configured port (from environment variable or default 3000).
+  - Login/logout and authentication middleware.
+  - Rendering EJS views (dashboard, admin pages).
+  - **RESTful CRUD APIs** for `tasks` and `users` (admin only).
+- Starts the server on `process.env.PORT || 3000`.
 
 ### package.json
 
-- Contains project metadata (name, version, scripts).
-- Main dependencies:
-  - express: Web framework to handle routing and middleware.
-  - ejs: Template engine for rendering UI views.
-  - mongoose: Database access and schema definitions.
-  - dotenv: Environment variable management.
-  - express-session, bcrypt, etc., if you use sessions and password hashing.
-- Includes npm scripts such as:
-  - "start": Start the server with `node server.js`.
-  - "dev": Start the server with a watcher like `nodemon`.
+- Project metadata and scripts.
+- Key dependencies:
+  - `express`: Web framework.
+  - `ejs`: View engine.
+  - `mongoose`: MongoDB ODM.
+  - `dotenv`: Environment config.
+  - `express-session`, `connect-mongo`: Session management.
+  - `bcrypt`: Password hashing.
+  - `cors` (optional, for API testing).
+- Scripts:
+  ```json
+  "start": "node server.js",
+  "dev": "nodemon server.js"
+public/ folder
+	•	Static assets served directly.
+	•	Contains:
+	◦	styles.css: Global styling for dashboard, forms, and tables.
+	◦	script.js: Client-side form validation and dynamic updates.
+	◦	images/: App logo, icons, and UI assets.
+views/ folder
+	•	EJS templates for server-rendered pages.
+	•	Included files:
+	◦	login.ejs: Login form.
+	◦	dashboard.ejs: Main user dashboard with task summary cards.
+	◦	admin_users.ejs: Admin panel to manage users (CRUD).
+	◦	admin_tasks.ejs: Admin panel to manage tasks (CRUD).
+	◦	partials/dashbox.ejs: Reusable card component for dashboard metrics.
+models/ folder
+	•	Mongoose schema definitions.
+	•	Model files:
+	◦	User.js: Schema with name, email, password (hashed), role (admin/user).
+	◦	Task.js: Schema with title, description, status (pending/completed), assignedTo (User ref), dueDate.
 
-### public/ folder
+Cloud-based server URL
+Live Demo: [https://comp3810-group63.onrender.com/login](https://comp3810-group-63-9qvf.onrender.com/login)
 
-- Stores static assets served directly by Express.
-- Typical contents:
-  - CSS files for layout and styling of dashboard and admin pages.
-  - Client-side JavaScript for form validation, AJAX, or dynamic UI behavior.
-  - Images/icons used in navigation, logo, or dashboard widgets.
+Operation guides (user flow)
+Login/Logout
+	1	Open the live URL in your browser.
+	2	Use one of the pre-seeded accounts:
+	◦	Admin:
+	▪	Username: admin@example.com
+	▪	Password: Admin123!
+	◦	Normal User:
+	▪	Username: user1@example.com
+	▪	Password: User123!
+	3	Click Login → redirected to /dashboard.
+	4	Click Logout (top-right nav) → session destroyed, back to login.
 
-### views/ folder
+Using the Dashboard and CRUD Web Pages
+Dashboard (`dashboard.ejs`)
+	•	Shows summary cards (via dashbox.ejs):
+	◦	Total Tasks, Pending, Completed, Assigned to Me.
+	•	Navigation links:
+	◦	Admin → Users: /admin/users (admin only)
+	◦	Admin → Tasks: /admin/tasks (admin only)
+Admin: Manage Users (`admin_users.ejs`)
+Action
+UI Element
+Create
+“Add New User” button → opens form → submit
+Read
+Table lists all users (email, name, role)
+Update
+“Edit” button per row → inline form → save
+Delete
+“Delete” button per row → confirm dialog
+Admin: Manage Tasks (`admin_tasks.ejs`)
+Action
+UI Element
+Create
+“Create Task” button → modal/form
+Read
+Table with title, status, assignee, due date
+Update
+“Edit” icon → edit row or modal
+Delete
+“Trash” icon → confirm
 
-- Contains EJS templates for server-side rendered pages.
-- Included files: 
-  - dashboard.ejs: Main user dashboard, showing key panels/metrics and navigation to other features.
-  - admin_users.ejs: Admin page to list, create, edit, and delete users.
-  - dashbox.ejs: A reusable partial for dashboard boxes/cards embedded into the main dashboard or other pages.
+RESTful CRUD Services
+All API endpoints require authentication. You must be logged in via the web UI first. The session cookie (connect.sid) is sent automatically in browser requests. For curl, include the cookie after logging in (copy from browser DevTools → Network → any request → “Cookie” header).
+Base URL
+[https://comp3810-group63.onrender.com](https://comp3810-group-63-9qvf.onrender.com/login)
 
-### models/ folder
+1. Tasks API (`/api/tasks`) – Admin + Authenticated Users
+Method
+Endpoint
+Description
+Body (JSON)
+POST
+/api/tasks
+Create a new task
+{ "title": "Finish report", "description": "...", "status": "pending", "assignedTo": "user1@example.com", "dueDate": "2025-12-10" }
+GET
+/api/tasks
+List all tasks (filterable: ?status=pending)
+—
+GET
+/api/tasks/:id
+Get one task
+—
+PUT
+/api/tasks/:id
+Update task
+{ "title": "Updated", "status": "completed" }
+DELETE
+/api/tasks/:id
+Delete task
+—
 
-- Contains model definitions for interacting with the database.
-- Typical model files:
-  - User.js: Defines user schema, roles (admin/normal user), and authentication-related fields.
-  - Event.js: Defines events/tasks schema if your project manages events.
-  - Other domain models as required (e.g. Booking.js, Task.js).
+2. Users API (`/api/users`) – Admin Only
+Method
+Endpoint
+Description
+Body (JSON)
+GET
+/api/users
+List all users
+—
+GET
+/api/users/:id
+Get one user
+—
+POST
+/api/users
+Create user (admin)
+{ "name": "John", "email": "john@example.com", "password": "Pass123!", "role": "user" }
+PUT
+/api/users/:id
+Update user
+{ "name": "John Doe", "role": "admin" }
+DELETE
+/api/users/:id
+Delete user
+—
 
-## Cloud-based server URL
+How to Test APIs with `curl`
+Step 1: Log in via browser → open DevTools → Network tab → reload → copy Cookie header from any request.
+Example Cookie:
+connect.sid=s%3Aabc123...xyz
 
-- Production/test URL:
-  - https://comp3810-group-63-9qvf.onrender.com/login
+Create a Task
+curl -X POST https://comp3810-group63.onrender.com/api/tasks \
+  -H "Content-Type: application/json" \
+  -H "Cookie: connect.sid=YOUR_SESSION_COOKIE_HERE" \
+  -d '{
+    "title": "API Test Task",
+    "description": "Created via curl",
+    "status": "pending",
+    "assignedTo": "user1@example.com",
+    "dueDate": "2025-12-15"
+  }'
+List All Tasks
+curl https://comp3810-group63.onrender.com/api/tasks \
+  -H "Cookie: connect.sid=YOUR_SESSION_COOKIE_HERE"
+Get One Task
+curl https://comp3810-group63.onrender.com/api/tasks/675a1b2c3d4e5f6789abc123 \
+  -H "Cookie: connect.sid=YOUR_SESSION_COOKIE_HERE"
+Update Task
+curl -X PUT https://comp3810-group63.onrender.com/api/tasks/675a1b2c3d4e5f6789abc123 \
+  -H "Content-Type: application/json" \
+  -H "Cookie: connect.sid=YOUR_SESSION_COOKIE_HERE" \
+  -d '{"status": "completed"}'
+Delete Task
+curl -X DELETE https://comp3810-group63.onrender.com/api/tasks/675a1b2c3d4e5f6789abc123 \
+  -H "Cookie: connect.sid=YOUR_SESSION_COOKIE_HERE"
 
-## Operation guides (user flow)
-
-### Login/Logout
-
-1. Navigate to the cloud URL in a browser.
-2. On the login page, enter one of the valid accounts, for example:
-   - Admin: 
-     - Username: admin@example.com
-     - Password: Admin123!
-   - Normal user:
-     - Username: user1@example.com
-     - Password: User123!
-3. Click “Login” to authenticate and access the dashboard.
-4. To log out, click the “Logout” button or link in the navigation bar to end the session and return to the login page.
-
-### Using the dashboard and CRUD web pages
-
-- Dashboard:
-  - After login, the dashboard page (dashboard.ejs) displays key boxes/cards implemented using the dashbox partial, such as counts of users, events, or tasks.
-  - Use the provided navigation links/buttons to access admin or resource-specific pages.
-- Admin users (admin_users.ejs):
-  - Create: Use the “Add User” button or form at the top/bottom of the page to submit new user details.
-  - Read: The user list table shows existing users and their basic info.
-  - Update: Click an “Edit” or “Update” button next to a user row, modify fields in the form, then submit.
-  - Delete: Click a “Delete” button next to a user row to remove a user (confirm if a popup appears).
-
-
-### RESTful CRUD services
-
-Below is an example structure for your APIs. Replace resource names and paths with your actual routes.
-
-- Base resource: /api/users
-  - Create user:
-    - Method: POST
-    - Path: /api/users
-    - Body: JSON with fields such as `{ "name": "...", "email": "...", "role": "admin" }`
-  - Read all users:
-    - Method: GET
-    - Path: /api/users
-  - Read single user:
-    - Method: GET
-    - Path: /api/users/:id
-  - Update user:
-    - Method: PUT
-    - Path: /api/users/:id
-    - Body: JSON with fields to update.
-  - Delete user:
-    - Method: DELETE
-    - Path: /api/users/:id
-
-Example curl commands (change host/paths as needed):
-
-- Create user:
-  - curl -X POST https://your-host/api/users \
-    -H "Content-Type: application/json" \
-    -d '{"name":"Test User","email":"test@example.com","role":"user"}'
-- List users:
-  - curl https://your-host/api/users
-- Get one user:
-  - curl https://your-host/api/users/USER_ID
-- Update user:
-  - curl -X PUT https://your-host/api/users/USER_ID \
-    -H "Content-Type: application/json" \
-    -d '{"name":"Updated Name"}'
-- Delete user:
-  - curl -X DELETE https://your-host/api/users/USER_ID
-
+Task Manager is built with Express, EJS, MongoDB Atlas, and deployed on Render.
+---
