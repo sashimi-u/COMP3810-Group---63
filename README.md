@@ -1,196 +1,219 @@
 # Task Manager - COMP3810 Group Project
 
-## Project info
-
-- **Project name**: Task Manager
-- **Group**: Group 63
-- **Students**:
-  - U Yat Long (SID: 13901050)
-  - FUNG CHUN (SID: 13479693)
-  - So Chak Lam (SID: 13492330)
-  - Tse Cheuk Hin (SID: 13485097)
+> A full-stack task management system with user roles, dashboard, admin CRUD, and RESTful API.
 
 ---
 
-## Project file intro
+## Project Info
 
-### server.js
+- **Project Name**: Task Manager
+- **Group**: Group 63
+- **Members**:
+  | Name | SID |
+  |------|-----|
+  | U Yat Long | 13901050 |
+  | FUNG CHUN | 13479693 |
+  | So Chak Lam | 13492330 |
+  | Tse Cheuk Hin | 13485097 |
 
-- Initializes the Express application, configures middleware (body parsing, static files, session/auth), and connects to MongoDB via Mongoose.
-- Defines routes for:
-  - Login/logout and authentication middleware.
-  - Rendering EJS views (dashboard, admin pages).
-  - **RESTful CRUD APIs** for `tasks` and `users` (admin only).
-- Starts the server on `process.env.PORT || 3000`.
+---
 
-### package.json
+## Project Structure
 
-- Project metadata and scripts.
-- Key dependencies:
-  - `express`: Web framework.
-  - `ejs`: View engine.
-  - `mongoose`: MongoDB ODM.
-  - `dotenv`: Environment config.
-  - `express-session`, `connect-mongo`: Session management.
-  - `bcrypt`: Password hashing.
-  - `cors` (optional, for API testing).
-- Scripts:
-  ```json
+### `server.js`
+- Initializes Express app with middleware (`body-parser`, sessions, static files).
+- Connects to **MongoDB Atlas** via Mongoose.
+- Defines:
+  - Authentication routes (`/login`, `/logout`)
+  - EJS view routes (`/dashboard`, `/admin/*`)
+  - **RESTful API** endpoints (`/api/tasks`, `/api/users`)
+- Listens on `process.env.PORT || 3000`
+
+### `package.json`
+```json
+"dependencies": {
+  "express": "^4.18.2",
+  "ejs": "^3.1.9",
+  "mongoose": "^7.6.0",
+  "bcrypt": "^5.1.0",
+  "express-session": "^1.17.3",
+  "connect-mongo": "^5.0.0",
+  "dotenv": "^16.3.1"
+},
+"scripts": {
   "start": "node server.js",
   "dev": "nodemon server.js"
-public/ folder
-	•	Static assets served directly.
-	•	Contains:
-	◦	styles.css: Global styling for dashboard, forms, and tables.
-	◦	script.js: Client-side form validation and dynamic updates.
-	◦	images/: App logo, icons, and UI assets.
-views/ folder
-	•	EJS templates for server-rendered pages.
-	•	Included files:
-	◦	login.ejs: Login form.
-	◦	dashboard.ejs: Main user dashboard with task summary cards.
-	◦	admin_users.ejs: Admin panel to manage users (CRUD).
-	◦	admin_tasks.ejs: Admin panel to manage tasks (CRUD).
-	◦	partials/dashbox.ejs: Reusable card component for dashboard metrics.
-models/ folder
-	•	Mongoose schema definitions.
-	•	Model files:
-	◦	User.js: Schema with name, email, password (hashed), role (admin/user).
-	◦	Task.js: Schema with title, description, status (pending/completed), assignedTo (User ref), dueDate.
+}
+```
 
-Cloud-based server URL
-Live Demo: [https://comp3810-group63.onrender.com/login](https://comp3810-group-63-9qvf.onrender.com/login)
+### `public/` Folder
+- `styles.css` → Global responsive styling
+- `script.js` → Form validation & dynamic UI
+- `images/` → Logo, icons, avatars
 
-Operation guides (user flow)
-Login/Logout
-	1	Open the live URL in your browser.
-	2	Use one of the pre-seeded accounts:
-	◦	Admin:
-	▪	Username: admin@example.com
-	▪	Password: Admin123!
-	◦	Normal User:
-	▪	Username: user1@example.com
-	▪	Password: User123!
-	3	Click Login → redirected to /dashboard.
-	4	Click Logout (top-right nav) → session destroyed, back to login.
+### `views/` Folder
+| File | Purpose |
+|------|--------|
+| `login.ejs` | Login form |
+| `dashboard.ejs` | User dashboard with stats |
+| `admin_users.ejs` | Admin: manage users |
+| `admin_tasks.ejs` | Admin: manage tasks |
+| `partials/dashbox.ejs` | Reusable metric card |
 
-Using the Dashboard and CRUD Web Pages
-Dashboard (`dashboard.ejs`)
-	•	Shows summary cards (via dashbox.ejs):
-	◦	Total Tasks, Pending, Completed, Assigned to Me.
-	•	Navigation links:
-	◦	Admin → Users: /admin/users (admin only)
-	◦	Admin → Tasks: /admin/tasks (admin only)
-Admin: Manage Users (`admin_users.ejs`)
-Action
-UI Element
-Create
-“Add New User” button → opens form → submit
-Read
-Table lists all users (email, name, role)
-Update
-“Edit” button per row → inline form → save
-Delete
-“Delete” button per row → confirm dialog
-Admin: Manage Tasks (`admin_tasks.ejs`)
-Action
-UI Element
-Create
-“Create Task” button → modal/form
-Read
-Table with title, status, assignee, due date
-Update
-“Edit” icon → edit row or modal
-Delete
-“Trash” icon → confirm
+### `models/` Folder
+| Model | Fields |
+|-------|--------|
+| `User.js` | `name`, `email`, `password` (hashed), `role` (`admin`/`user`) |
+| `Task.js` | `title`, `description`, `priority`, `status`, `createdBy`, `assignedTo`, `dueDate` |
 
-RESTful CRUD Services
-All API endpoints require authentication. You must be logged in via the web UI first. The session cookie (connect.sid) is sent automatically in browser requests. For curl, include the cookie after logging in (copy from browser DevTools → Network → any request → “Cookie” header).
-Base URL
-[https://comp3810-group63.onrender.com](https://comp3810-group-63-9qvf.onrender.com/login)
+---
 
-1. Tasks API (`/api/tasks`) – Admin + Authenticated Users
-Method
-Endpoint
-Description
-Body (JSON)
-POST
-/api/tasks
-Create a new task
-{ "title": "Finish report", "description": "...", "status": "pending", "assignedTo": "user1@example.com", "dueDate": "2025-12-10" }
-GET
-/api/tasks
-List all tasks (filterable: ?status=pending)
-—
-GET
-/api/tasks/:id
-Get one task
-—
-PUT
-/api/tasks/:id
-Update task
-{ "title": "Updated", "status": "completed" }
-DELETE
-/api/tasks/:id
-Delete task
-—
+## Live Demo
 
-2. Users API (`/api/users`) – Admin Only
-Method
-Endpoint
-Description
-Body (JSON)
-GET
-/api/users
-List all users
-—
-GET
-/api/users/:id
-Get one user
-—
-POST
-/api/users
-Create user (admin)
-{ "name": "John", "email": "john@example.com", "password": "Pass123!", "role": "user" }
-PUT
-/api/users/:id
-Update user
-{ "name": "John Doe", "role": "admin" }
-DELETE
-/api/users/:id
-Delete user
-—
+[**https://comp3810-group-63-9qvf.onrender.com/login**](https://comp3810-group-63-9qvf.onrender.com/login)
 
-How to Test APIs with `curl`
-Step 1: Log in via browser → open DevTools → Network tab → reload → copy Cookie header from any request.
-Example Cookie:
-connect.sid=s%3Aabc123...xyz
+---
 
-Create a Task
-curl -X POST https://comp3810-group63.onrender.com/api/tasks \
+## Operation Guide
+
+### Login / Logout
+
+1. Go to the live URL.
+2. Use one of these **pre-seeded accounts**:
+
+   | Role | Email | Password |
+   |------|-------|----------|
+   | Admin | `admin@example.com` | `Admin123!` |
+   | User | `user1@example.com` | `User123!` |
+
+3. Click **Login** → Redirect to `/dashboard`
+4. Click **Logout** (top-right) → Back to login
+
+---
+
+### Dashboard (`/dashboard`)
+- Displays **summary cards**:
+  - Total Tasks
+  - Pending / Completed
+  - My Tasks
+- Admin links:
+  - [Users](#admin-users) → `/admin/users`
+  - [Tasks](#admin-tasks) → `/admin/tasks`
+
+---
+
+### Admin: Manage Users (`/admin/users`)
+
+| Action | How |
+|-------|-----|
+| **Create** | Click **"Add New User"** → Fill form → Submit |
+| **Read** | Table shows all users |
+| **Update** | Click **Edit** → Modify → Save |
+| **Delete** | Click **Delete** → Confirm |
+
+---
+
+### Admin: Manage Tasks (`/admin/tasks`)
+
+| Action | How |
+|-------|-----|
+| **Create** | Click **"Create Task"** → Fill modal → Submit |
+| **Read** | Table: title, status, assignee, due date |
+| **Update** | Click **Edit** → Update fields |
+| **Delete** | Click **Trash** → Confirm |
+
+---
+
+## RESTful API
+
+> **All API endpoints require authentication**  
+> Use session cookie (`connect.sid`) from browser login.
+
+### Base URL
+```
+https://comp3810-group-63-9qvf.onrender.com
+```
+
+---
+
+### 1. Tasks API – `/api/tasks` (Admin + Users)
+
+| Method | Endpoint | Description |
+|--------|----------|-----------|
+| `POST` | `/api/tasks` | Create task |
+| `GET` | `/api/tasks` | List all tasks |
+| `GET` | `/api/tasks/:id` | Get one task |
+| `PUT` | `/api/tasks/:id` | Update task |
+| `DELETE` | `/api/tasks/:id` | Delete task |
+
+#### Example: Create Task
+```json
+{
+  "title": "Submit Assignment",
+  "description": "COMP3810 final project",
+  "priority": "high",
+  "status": "pending",
+  "assignedTo": "user1@example.com",
+  "dueDate": "2025-12-10"
+}
+```
+
+---
+
+### 2. Users API – `/api/users` (**Admin Only**)
+
+| Method | Endpoint | Description |
+|--------|----------|-----------|
+| `GET` | `/api/users` | List users |
+| `GET` | `/api/users/:id` | Get user |
+| `POST` | `/api/users` | Create user |
+| `PUT` | `/api/users/:id` | Update user |
+| `DELETE` | `/api/users/:id` | Delete user |
+
+---
+
+## Test APIs with `curl`
+
+> **Step 1**: Log in → Open DevTools → Network → Copy **Cookie** header  
+> Example: `connect.sid=s%3Aabc123...`
+
+### Create Task
+```bash
+curl -X POST https://comp3810-group-63-9qvf.onrender.com/api/tasks \
   -H "Content-Type: application/json" \
-  -H "Cookie: connect.sid=YOUR_SESSION_COOKIE_HERE" \
+  -H "Cookie: connect.sid=YOUR_SESSION_COOKIE" \
   -d '{
-    "title": "API Test Task",
-    "description": "Created via curl",
+    "title": "Test via curl",
+    "description": "API testing",
+    "priority": "medium",
     "status": "pending",
     "assignedTo": "user1@example.com",
     "dueDate": "2025-12-15"
   }'
-List All Tasks
-curl https://comp3810-group63.onrender.com/api/tasks \
-  -H "Cookie: connect.sid=YOUR_SESSION_COOKIE_HERE"
-Get One Task
-curl https://comp3810-group63.onrender.com/api/tasks/675a1b2c3d4e5f6789abc123 \
-  -H "Cookie: connect.sid=YOUR_SESSION_COOKIE_HERE"
-Update Task
-curl -X PUT https://comp3810-group63.onrender.com/api/tasks/675a1b2c3d4e5f6789abc123 \
-  -H "Content-Type: application/json" \
-  -H "Cookie: connect.sid=YOUR_SESSION_COOKIE_HERE" \
-  -d '{"status": "completed"}'
-Delete Task
-curl -X DELETE https://comp3810-group63.onrender.com/api/tasks/675a1b2c3d4e5f6789abc123 \
-  -H "Cookie: connect.sid=YOUR_SESSION_COOKIE_HERE"
+```
 
-Task Manager is built with Express, EJS, MongoDB Atlas, and deployed on Render.
----
+### List All Tasks
+```bash
+curl https://comp3810-group-63-9qvf.onrender.com/api/tasks \
+  -H "Cookie: connect.sid=YOUR_SESSION_COOKIE"
+```
+
+### Get One Task
+```bash
+curl https://comp3810-group-63-9qvf.onrender.com/api/tasks/692565709fbb0e4d6d0605fd \
+  -H "Cookie: connect.sid=YOUR_SESSION_COOKIE"
+```
+
+### Update Task
+```bash
+curl -X PUT https://comp3810-group-63-9qvf.onrender.com/api/tasks/692565709fbb0e4d6d0605fd \
+  -H "Content-Type: application/json" \
+  -H "Cookie: connect.sid=YOUR_SESSION_COOKIE" \
+  -d '{"status": "completed"}'
+```
+
+### Delete Task
+```bash
+curl -X DELETE https://comp3810-group-63-9qvf.onrender.com/api/tasks/692565709fbb0e4d6d0605fd \
+  -H "Cookie: connect.sid=YOUR_SESSION_COOKIE"
+```
